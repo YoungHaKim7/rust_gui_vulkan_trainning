@@ -95,7 +95,7 @@ impl PixelsDrawPipeline {
         }
     }
 
-    fn create_image_sampler_nearest(&self, image: Arc<ImageView>) -> Arc<DescriptorSet> {
+    fn create_image_sampler_nearest(&self, image: Arc<ImageView>) -> Arc<dyn DescriptorSet> {
         let layout = &self.pipeline.layout().set_layouts()[0];
         let sampler = Sampler::new(
             self.gfx_queue.device().clone(),
