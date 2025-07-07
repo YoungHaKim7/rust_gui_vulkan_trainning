@@ -12,12 +12,21 @@
 - https://github.com/vulkano-rs/vulkano
 
 
+<hr />
 
 # Vulkan vs OpenGL
 
-||Vulkan|OpenGL|
+
+|-|OpenGL | Vulkan|
 |-|-|-|
-|Thread|Multithreading|Singlethreading|
+|Thread|Single-threading|Multi-threading|
+|global<br> state<br> machine|One single global state machine |	Object-based with no global state|
+|state<br> concepts|State is tied to a single context |	All state concepts are localized to a command buffer|
+||Operations can only be executed sequentially |	Multi-threaded programming is possible|
+|memory management|GPU memory and synchronization are usually hidden |	Explicit control over memory management and synchronization|
+|checking at runtime|Extensive error checking |	Vulkan drivers do no error checking at runtime;<br> there is a validation layer for developers |
+
+- https://en.wikipedia.org/wiki/Vulkan
 
 - 그림으로 이해
   - OpenGL and Vulkan are both rendering APIs. In both cases, the GPU executes shaders, while the CPU executes everything else.
