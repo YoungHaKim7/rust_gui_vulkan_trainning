@@ -2,12 +2,11 @@ use crate::app::App;
 use glam::IVec2;
 use rand::Rng;
 use std::sync::Arc;
-use vulkano::command_buffer::sys::CommandBufferBeginInfo;
 use vulkano::{
     buffer::{Buffer, BufferCreateInfo, BufferUsage, Subbuffer},
     command_buffer::{
-        allocator::StandardCommandBufferAllocator, CommandBufferLevel, CommandBufferUsage,
-        RecordingCommandBuffer,
+        allocator::StandardCommandBufferAllocator, CommandBufferBeginInfo, CommandBufferLevel,
+        CommandBufferUsage, RecordingCommandBuffer,
     },
     descriptor_set::{
         allocator::StandardDescriptorSetAllocator, DescriptorSet, WriteDescriptorSet,
