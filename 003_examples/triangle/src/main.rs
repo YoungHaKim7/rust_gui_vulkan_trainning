@@ -208,7 +208,10 @@ impl App {
         // the iterator.
         let queue = queues.next().unwrap();
 
-        let memory_allocator = Arc::new(StandardMemoryAllocator::new(device, Default::default()));
+        let memory_allocator = Arc::new(StandardMemoryAllocator::new(
+            device.clone(),
+            Default::default(),
+        ));
 
         // Before we can start creating and recording command buffers, we need a way of allocating
         // them. Vulkano provides a command buffer allocator, which manages raw Vulkan command
@@ -249,7 +252,7 @@ impl App {
 
         App {
             instance,
-            device.clone(),
+            device,
             queue,
             command_buffer_allocator,
             vertex_buffer,
