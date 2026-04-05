@@ -15,7 +15,7 @@ use vulkano_util::{
     renderer::VulkanoWindowRenderer,
     window::{VulkanoWindows, WindowDescriptor},
 };
-use winit::{event_loop::EventLoop, window::WindowId};
+use winit::{event_loop::ActiveEventLoop, window::WindowId};
 
 pub struct RenderPipeline {
     pub compute: GameOfLifeComputePipeline,
@@ -46,7 +46,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn open(&mut self, event_loop: &EventLoop<()>) {
+    pub fn open(&mut self, event_loop: &ActiveEventLoop) {
         // Create windows & pipelines.
         let id1 = self.windows.create_window(
             event_loop,
