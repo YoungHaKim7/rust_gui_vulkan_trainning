@@ -33,6 +33,7 @@ use vulkano::{
             vertex_input::{Vertex, VertexDefinition},
             viewport::{Viewport, ViewportState},
         },
+        layout::PipelineLayoutCreateInfo,
     },
     render_pass::{Framebuffer, FramebufferCreateInfo, RenderPass, Subpass},
     swapchain::{
@@ -76,7 +77,7 @@ struct RenderContext {
 
 impl App {
     fn new(event_loop: &EventLoop<()>) -> Self {
-        let library = unsafe { VulkanLibrary::new() }.unwrap();
+        let library = VulkanLibrary::new().unwrap();
 
         // The first step of any Vulkan program is to create an instance.
         //
@@ -217,7 +218,7 @@ impl App {
         // them. Vulkano provides a command buffer allocator, which manages raw Vulkan command
         // pools underneath and provides a safe interface for them.
         let command_buffer_allocator = Arc::new(StandardCommandBufferAllocator::new(
-            device,
+            device.clone(),
             Default::default(),
         ));
 
@@ -274,7 +275,7 @@ impl ApplicationHandler for App {
                 .create_window(Window::default_attributes())
                 .unwrap(),
         );
-        let surface = Surface::from_window(self.instance, window).unwrap();
+        let surface = Surface::from_window(self.instance.clone(), window.clone()).unwrap();
         let window_size = window.inner_size();
 
         // Before we can draw on the surface, we have to create what is called a swapchain.
@@ -286,19 +287,19 @@ impl ApplicationHandler for App {
             let surface_capabilities = self
                 .device
                 .physical_device()
-                .surface_capabilities(surface, Default::default())
+                .surface_capabilities(&surface, Default::default())
                 .unwrap();
 
             // Choosing the internal format that the images will have.
             let (image_format, _) = self
                 .device
                 .physical_device()
-                .surface_formats(surface, Default::default())
+                .surface_formats(&surface, Default::default())
                 .unwrap()[0];
 
             // Please take a look at the docs for the meaning of the parameters we didn't mention.
             Swapchain::new(
-                self.device,
+                self.device.clone(),
                 surface,
                 SwapchainCreateInfo {
                     // Some drivers report an `min_image_count` of 1, but fullscreen mode requires
@@ -389,7 +390,7 @@ impl ApplicationHandler for App {
         // output of the graphics pipeline will go. It describes the layout of the images where the
         // colors, depth and/or stencil information will be written.
         let render_pass = vulkano::single_pass_renderpass!(
-            self.device,
+            self.device.clone(),
             attachments: {
                 // `color` is a custom name we give to the first and only attachment.
                 color: {
@@ -437,8 +438,8 @@ impl ApplicationHandler for App {
             //
             // A Vulkan shader can in theory contain multiple entry points, so we have to specify
             // which one.
-            let vs = vs::load(self.device).unwrap().entry_point("main").unwrap();
-            let fs = fs::load(self.device).unwrap().entry_point("main").unwrap();
+            let vs = vs::load(self.device.clone()).unwrap().entry_point("main").unwrap();
+            let fs = fs::load(self.device.clone()).unwrap().entry_point("main").unwrap();
 
             // Automatically generate a vertex input state from the vertex shader's input
             // interface, that takes a single vertex buffer containing `Vertex` structs.
@@ -464,18 +465,22 @@ impl ApplicationHandler for App {
             // automatically generate the layout from the resources used in the shaders. In a real
             // application, you would specify this information manually so that you can re-use one
             // layout in multiple pipelines.
-            let layout = PipelineLayout::from_stages(&self.device, &stages).unwrap();
+            let layout = PipelineLayout::new(
+                self.device.clone(),
+                PipelineLayoutCreateInfo::default(),
+            )
+            .unwrap();
 
             // We have to indicate which subpass of which render pass this pipeline is going to be
             // used in. The pipeline will only be usable from this particular subpass.
-            let subpass = Subpass::new(&render_pass, 0).unwrap();
+            let subpass = Subpass::from(render_pass.clone(), 0).unwrap();
 
             // Finally, create the pipeline.
             GraphicsPipeline::new(
-                self.device,
+                self.device.clone(),
                 None,
                 GraphicsPipelineCreateInfo {
-                    stages: stages,
+                    stages: stages.to_vec().into(),
                     // How vertex data is read from the vertex buffers into the vertex shader.
                     vertex_input_state: Some(vertex_input_state),
                     // How vertices are arranged into primitive shapes. The default primitive shape
@@ -500,9 +505,9 @@ impl ApplicationHandler for App {
                     // Dynamic states allows us to specify parts of the pipeline settings when
                     // recording the command buffer, before we perform drawing. Here, we specify
                     // that the viewport should be dynamic.
-                    dynamic_state: [DynamicState::Viewport],
+                    dynamic_state: [DynamicState::Viewport].into_iter().collect(),
                     subpass: Some((subpass).into()),
-                    ..GraphicsPipelineCreateInfo::new(&layout)
+                    ..GraphicsPipelineCreateInfo::layout(layout.clone())
                 },
             )
             .unwrap()
@@ -513,8 +518,7 @@ impl ApplicationHandler for App {
         let viewport = Viewport {
             offset: [0.0, 0.0],
             extent: window_size.into(),
-            min_depth: 0.0,
-            max_depth: 1.0,
+            depth_range: 0.0..=1.0,
         };
 
         // In some situations, the swapchain will become invalid by itself. This includes for
@@ -712,7 +716,7 @@ impl ApplicationHandler for App {
                     // that draws the triangle.
                     .then_swapchain_present(
                         self.queue.clone(),
-                        SwapchainPresentInfo::new(rcx.swapchain.clone(), image_index),
+                        SwapchainPresentInfo::swapchain_image_index(rcx.swapchain.clone(), image_index),
                     )
                     .then_signal_fence_and_flush();
 
@@ -757,10 +761,10 @@ fn window_size_dependent_setup(
     images
         .iter()
         .map(|image| {
-            let view = ImageView::new_default(image).unwrap();
+            let view = ImageView::new_default(image.clone()).unwrap();
 
             Framebuffer::new(
-                render_pass,
+                render_pass.clone(),
                 FramebufferCreateInfo {
                     attachments: [view].to_vec(),
                     ..Default::default()
