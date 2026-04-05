@@ -86,13 +86,13 @@ impl RenderPassPlaceOverFrame {
         // Begin the render pass.
         command_buffer_builder
             .begin_render_pass(
-                RenderPassBeginInfo {
+                &RenderPassBeginInfo {
                     clear_values: vec![Some([0.0; 4].into())],
                     ..RenderPassBeginInfo::framebuffer(
                         self.framebuffers[image_index as usize].clone(),
                     )
                 },
-                SubpassBeginInfo {
+                &SubpassBeginInfo {
                     contents: SubpassContents::SecondaryCommandBuffers,
                     ..Default::default()
                 },
@@ -107,7 +107,7 @@ impl RenderPassPlaceOverFrame {
 
         // End the render pass.
         command_buffer_builder
-            .end_render_pass(Default::default())
+            .end_render_pass(&Default::default())
             .unwrap();
 
         // Build the command buffer.
@@ -115,7 +115,7 @@ impl RenderPassPlaceOverFrame {
 
         // Execute primary command buffer.
         let after_future = before_future
-            .then_execute(self.gfx_queue.clone(), command_buffer)
+            .then_execute(self.gfx_queue.clone(), command_buffer.into())
             .unwrap();
 
         after_future.boxed()

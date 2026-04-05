@@ -150,7 +150,7 @@ impl PixelsDrawPipeline {
                 .collect(),
             )
             .unwrap()
-            .bind_pipeline_graphics(self.pipeline.clone())
+            .bind_pipeline_graphics(&self.pipeline.clone())
             .unwrap()
             .bind_descriptor_sets(
                 PipelineBindPoint::Graphics,
@@ -164,7 +164,7 @@ impl PixelsDrawPipeline {
             builder.draw(6, 1, 0, 0).unwrap();
         }
 
-        builder.end().unwrap()
+        builder.end().unwrap().into()
     }
 }
 
