@@ -5,6 +5,11 @@
 
 # link
 
+- Vulkan공부하기 전 OpenGL기초 지식이 필요하다
+- Learn OpenGL
+  - https://learnopengl.com/PBR/Theory
+
+
 <hr />
 
 # rust_gui_vulkan_trainning
