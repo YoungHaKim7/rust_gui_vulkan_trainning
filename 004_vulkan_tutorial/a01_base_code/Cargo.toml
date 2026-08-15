@@ -1,0 +1,10 @@
+[package]
+name = "a01_base_code"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# GLFW bindings; keeps the port 1:1 with the C++ tutorial (window + input).
+# `ash` (Vulkan bindings) will be added in the next chapters, when
+# `initVulkan()` actually does something.
+glfw = "0.59"
