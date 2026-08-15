@@ -19,6 +19,11 @@
 
 <hr />
 
+# WebGPU headers
+- https://webgpu-native.github.io/webgpu-headers/
+
+<hr />
+
 # Vulkan vs OpenGL
 
 
