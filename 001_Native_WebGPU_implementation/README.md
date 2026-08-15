@@ -1,6 +1,8 @@
 # Native WebGPU implementation based on wgpu-core
 - https://github.com/gfx-rs/wgpu-native
 
+# WebGPU headers
+- https://webgpu-native.github.io/webgpu-headers/
 
 # `submodule`로 파일을 다 받아줘야함.
 
