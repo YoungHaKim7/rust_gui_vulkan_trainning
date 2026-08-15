@@ -15,6 +15,12 @@ https://docs.unity3d.com/kr/2017.1/Manual/SL-VertexFragmentShaderExamples.html
 # rust Vulkan
 - https://github.com/gfx-rs/wgpu-native
 
+```bash
+Fixed. The problem was that the git submodules weren't initialized — `build.rs` needs `ffi/webgpu-headers/webgpu.h` (bindgen input), but the directory was empty.
+
+Ran `git submodule update --init --recursive`, which cloned both `ffi/webgpu-headers` and `examples/vendor/glfw`, and `cargo build` now succeeds.
+```
+
 - wgpu-native is a Rust C-ABI library built with Cargo (MSRV 1.87), with a Makefile wrapping the common flows:
 
 ## Build the library
