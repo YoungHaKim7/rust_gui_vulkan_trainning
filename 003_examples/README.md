@@ -51,3 +51,8 @@ Other examples: `compute`, `capture`, `enumerate_adapters`, `texture_arrays`, `i
 - `make clean`
 
 Headers for consumers live in `ffi/webgpu-headers/webgpu.h` and `ffi/wgpu.h`. Note the `rust-toolchain.toml` pins a specific Rust version, so rustup will pick it up automatically.
+
+
+# 외국사람이 만든거
+- Exprimental web-based idler game in rust
+  - https://github.com/gregouar/webidler
