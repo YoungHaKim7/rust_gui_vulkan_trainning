@@ -14,56 +14,102 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use glfw::{Action, Context, Key};
+use std::error::Error;
 
-fn main() {
-    let mut glfw = glfw::init_no_callbacks().unwrap();
+use glfw::{
+    Action, ClientApiHint, Glfw, GlfwReceiver, Key, PWindow, WindowEvent, WindowHint, WindowMode,
+};
 
-    glfw.window_hint(glfw::WindowHint::Resizable(true));
+const WIDTH: u32 = 800;
+const HEIGHT: u32 = 600;
 
-    let (mut window, events) = glfw
-        .create_window(
-            800,
-            600,
-            "Hello, I am a window.",
-            glfw::WindowMode::Windowed,
-        )
-        .expect("Failed to create GLFW window.");
+struct HelloTriangleApplication {
+    glfw: Glfw,
+    window: PWindow,
+    events: GlfwReceiver<(f64, WindowEvent)>,
+}
 
-    window.set_sticky_keys(true);
+impl HelloTriangleApplication {
+    fn new() -> Result<Self, Box<dyn Error>> {
+        // glfwInit()
+        let mut glfw = glfw::init(glfw::fail_on_errors)?;
 
-    // Polling of events can be turned on and off by the specific event type
-    window.set_pos_polling(true);
-    window.set_all_polling(true);
-    window.set_size_polling(true);
-    window.set_close_polling(true);
-    window.set_refresh_polling(true);
-    window.set_focus_polling(true);
-    window.set_iconify_polling(true);
-    window.set_framebuffer_size_polling(true);
-    window.set_key_polling(true);
-    window.set_char_polling(true);
-    window.set_char_mods_polling(true);
-    window.set_mouse_button_polling(true);
-    window.set_cursor_pos_polling(true);
-    window.set_cursor_enter_polling(true);
-    window.set_scroll_polling(true);
-    window.set_maximize_polling(true);
-    window.set_content_scale_polling(true);
+        // initWindow()
+        glfw.window_hint(WindowHint::ClientApi(ClientApiHint::NoApi));
+        glfw.window_hint(WindowHint::Resizable(false));
+        let (mut window, events) = glfw
+            .create_window(WIDTH, HEIGHT, "Vulkan", WindowMode::Windowed)
+            .ok_or("failed to create GLFW window")?;
 
-    // Alternatively, all event types may be set to poll at once. Note that
-    // in this example, this call is redundant as all events have been set
-    // to poll in the above code.
-    window.set_all_polling(true);
+        window.set_sticky_keys(true);
 
-    window.make_current();
+        // Polling of events can be turned on and off by the specific event type
+        window.set_pos_polling(true);
+        window.set_size_polling(true);
+        window.set_close_polling(true);
+        window.set_refresh_polling(true);
+        window.set_focus_polling(true);
+        window.set_iconify_polling(true);
+        window.set_framebuffer_size_polling(true);
+        window.set_key_polling(true);
+        window.set_char_polling(true);
+        window.set_char_mods_polling(true);
+        window.set_mouse_button_polling(true);
+        window.set_cursor_pos_polling(true);
+        window.set_cursor_enter_polling(true);
+        window.set_scroll_polling(true);
+        window.set_maximize_polling(true);
+        window.set_content_scale_polling(true);
 
-    while !window.should_close() {
-        glfw.poll_events();
-        for event in glfw::flush_messages(&events) {
-            handle_window_event(&mut window, event);
+        // Alternatively, all event types may be set to poll at once. Note that
+        // in this example, this call is redundant as all events have been set
+        // to poll in the above code.
+        window.set_all_polling(true);
+
+        Ok(Self {
+            glfw,
+            window,
+            events,
+        })
+    }
+
+    fn run(&mut self) {
+        self.init_vulkan();
+        self.main_loop();
+        self.cleanup();
+    }
+
+    fn init_vulkan(&self) {
+        // Will be filled in the next chapters.
+    }
+
+    fn main_loop(&mut self) {
+        while !self.window.should_close() {
+            self.glfw.poll_events();
+
+            for (time, event) in glfw::flush_messages(&self.events) {
+                handle_window_event(&mut self.window, (time, event));
+            }
         }
     }
+
+    fn cleanup(&mut self) {
+        // glfwDestroyWindow() and glfwTerminate() are handled automatically:
+        // the window is destroyed when `PWindow` drops, and `Glfw` calls
+        // glfwTerminate() when it drops at the end of `main`.
+    }
+}
+
+fn main() {
+    let mut app = match HelloTriangleApplication::new() {
+        Ok(app) => app,
+        Err(err) => {
+            eprintln!("{err}");
+            std::process::exit(1); // EXIT_FAILURE
+        }
+    };
+
+    app.run();
 }
 
 fn handle_window_event(window: &mut glfw::Window, (time, event): (f64, glfw::WindowEvent)) {
