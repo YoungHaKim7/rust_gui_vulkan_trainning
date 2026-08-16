@@ -1,0 +1,11 @@
+[package]
+name = "defaults"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+# Enables the Vulkan info printing in main.rs (independent of glfw's "vulkan" feature).
+vulkan = []
+
+[dependencies]
+glfw = { version = "0.62.0", features = ["vulkan"] }
