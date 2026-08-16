@@ -1,35 +1,28 @@
 use rspirv::binary::Assemble;
 use rspirv::binary::Disassemble;
+use rspirv::spirv::{AddressingModel, Capability, ExecutionModel, FunctionControl, MemoryModel};
 
 fn main() {
     // Building
     let mut b = rspirv::dr::Builder::new();
     b.set_version(1, 0);
-    b.capability(rspirv::Capability::Shader);
-    b.memory_model(
-        rspirv::AddressingModel::Logical,
-        rspirv::MemoryModel::GLSL450,
-    );
+    b.capability(Capability::Shader);
+    b.memory_model(AddressingModel::Logical, MemoryModel::GLSL450);
     let void = b.type_void();
     let voidf = b.type_function(void, vec![]);
     let fun = b
-        .begin_function(
-            void,
-            None,
-            rspirv::FunctionControl::DONT_INLINE | rspirv::FunctionControl::CONST,
-            voidf,
-        )
+        .begin_function(void, None, FunctionControl::DONT_INLINE | FunctionControl::CONST, voidf)
         .unwrap();
-    b.begin_basic_block(None).unwrap();
+    b.begin_block(None).unwrap();
     b.ret().unwrap();
     b.end_function().unwrap();
-    b.entry_point(rspirv::ExecutionModel::Vertex, fun, "foo", vec![]);
+    b.entry_point(ExecutionModel::Vertex, fun, "foo", vec![]);
     let module = b.module();
 
     // Assembling
     let code = module.assemble();
     assert!(code.len() > 20); // Module header contains 5 words
-    assert_eq!(rspirv::MAGIC_NUMBER, code[0]);
+    assert_eq!(rspirv::spirv::MAGIC_NUMBER, code[0]);
 
     // Parsing
     let mut loader = rspirv::dr::Loader::new();
