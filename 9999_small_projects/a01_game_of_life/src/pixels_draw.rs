@@ -2,9 +2,8 @@ use crate::app::App;
 use std::sync::Arc;
 use vulkano::{
     command_buffer::{
-        allocator::StandardCommandBufferAllocator, CommandBuffer, CommandBufferBeginInfo,
-        CommandBufferInheritanceInfo, CommandBufferLevel, CommandBufferUsage,
-        RecordingCommandBuffer,
+        allocator::StandardCommandBufferAllocator, AutoCommandBufferBuilder,
+        CommandBufferInheritanceInfo, CommandBufferUsage, SecondaryAutoCommandBuffer,
     },
     descriptor_set::{
         allocator::StandardDescriptorSetAllocator, DescriptorSet, WriteDescriptorSet,
@@ -122,17 +121,17 @@ impl PixelsDrawPipeline {
     }
 
     /// Draws input `image` over a quad of size -1.0 to 1.0.
-    pub fn draw(&self, viewport_dimensions: [u32; 2], image: Arc<ImageView>) -> Arc<CommandBuffer> {
-        let mut builder = RecordingCommandBuffer::new(
+    pub fn draw(
+        &self,
+        viewport_dimensions: [u32; 2],
+        image: Arc<ImageView>,
+    ) -> Arc<SecondaryAutoCommandBuffer> {
+        let mut builder = AutoCommandBufferBuilder::secondary(
             self.command_buffer_allocator.clone(),
             self.gfx_queue.queue_family_index(),
-            CommandBufferLevel::Secondary,
-            CommandBufferBeginInfo {
-                usage: CommandBufferUsage::MultipleSubmit,
-                inheritance_info: Some(CommandBufferInheritanceInfo {
-                    render_pass: Some(self.subpass.clone().into()),
-                    ..Default::default()
-                }),
+            CommandBufferUsage::MultipleSubmit,
+            CommandBufferInheritanceInfo {
+                render_pass: Some(self.subpass.clone().into()),
                 ..Default::default()
             },
         )
@@ -150,7 +149,7 @@ impl PixelsDrawPipeline {
                 .collect(),
             )
             .unwrap()
-            .bind_pipeline_graphics(&self.pipeline.clone())
+            .bind_pipeline_graphics(self.pipeline.clone())
             .unwrap()
             .bind_descriptor_sets(
                 PipelineBindPoint::Graphics,
@@ -164,7 +163,7 @@ impl PixelsDrawPipeline {
             builder.draw(6, 1, 0, 0).unwrap();
         }
 
-        builder.end().unwrap().into()
+        builder.build().unwrap()
     }
 }
 

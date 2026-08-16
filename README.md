@@ -9,13 +9,11 @@
 - Learn OpenGL
   - https://learnopengl.com/PBR/Theory
 
-
 <hr />
 
 # rust_gui_vulkan_trainning
 
 - https://github.com/vulkano-rs/vulkano
-
 
 <hr />
 

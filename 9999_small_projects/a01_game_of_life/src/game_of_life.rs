@@ -5,8 +5,8 @@ use std::sync::Arc;
 use vulkano::{
     buffer::{Buffer, BufferCreateInfo, BufferUsage, Subbuffer},
     command_buffer::{
-        allocator::StandardCommandBufferAllocator, CommandBufferBeginInfo, CommandBufferLevel,
-        CommandBufferUsage, RecordingCommandBuffer,
+        allocator::StandardCommandBufferAllocator, AutoCommandBufferBuilder,
+        CommandBufferUsage, PrimaryAutoCommandBuffer,
     },
     descriptor_set::{
         allocator::StandardDescriptorSetAllocator, DescriptorSet, WriteDescriptorSet,
@@ -130,14 +130,10 @@ impl GameOfLifeComputePipeline {
         life_color: [f32; 4],
         dead_color: [f32; 4],
     ) -> Box<dyn GpuFuture> {
-        let mut builder = RecordingCommandBuffer::new(
+        let mut builder = AutoCommandBufferBuilder::primary(
             self.command_buffer_allocator.clone(),
             self.compute_queue.queue_family_index(),
-            CommandBufferLevel::Primary,
-            CommandBufferBeginInfo {
-                usage: CommandBufferUsage::OneTimeSubmit,
-                ..Default::default()
-            },
+            CommandBufferUsage::OneTimeSubmit,
         )
         .unwrap();
 
@@ -152,7 +148,7 @@ impl GameOfLifeComputePipeline {
         // Then color based on the next state.
         self.dispatch(&mut builder, life_color, dead_color, 1);
 
-        let command_buffer = builder.end().unwrap();
+        let command_buffer = builder.build().unwrap();
         let finished = before_future
             .then_execute(self.compute_queue.clone(), command_buffer)
             .unwrap();
@@ -167,7 +163,7 @@ impl GameOfLifeComputePipeline {
     /// Builds the command for a dispatch.
     fn dispatch(
         &self,
-        builder: &mut RecordingCommandBuffer,
+        builder: &mut AutoCommandBufferBuilder<PrimaryAutoCommandBuffer>,
         life_color: [f32; 4],
         dead_color: [f32; 4],
         // Step determines whether we color or compute life (see branch in the shader)s.
@@ -175,7 +171,7 @@ impl GameOfLifeComputePipeline {
     ) {
         // Resize image if needed.
         let image_extent = self.image.image().extent();
-        let pipeline_layout = self.compute_life_pipeline.layout();
+        let pipeline_layout = self.compute_life_pipeline.layout().clone();
         let desc_layout = &pipeline_layout.set_layouts()[0];
         let set = DescriptorSet::new(
             self.descriptor_set_allocator.clone(),
@@ -199,7 +195,7 @@ impl GameOfLifeComputePipeline {
             .unwrap()
             .bind_descriptor_sets(PipelineBindPoint::Compute, pipeline_layout.clone(), 0, set)
             .unwrap()
-            .push_constants(pipeline_layout.clone(), 0, push_constants)
+            .push_constants(pipeline_layout, 0, push_constants)
             .unwrap();
 
         unsafe {

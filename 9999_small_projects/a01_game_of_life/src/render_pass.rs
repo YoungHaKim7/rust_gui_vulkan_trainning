@@ -2,9 +2,8 @@ use crate::{app::App, pixels_draw::PixelsDrawPipeline};
 use std::sync::Arc;
 use vulkano::{
     command_buffer::{
-        allocator::StandardCommandBufferAllocator, CommandBufferBeginInfo, CommandBufferLevel,
-        CommandBufferUsage, RecordingCommandBuffer, RenderPassBeginInfo, SubpassBeginInfo,
-        SubpassContents,
+        allocator::StandardCommandBufferAllocator, AutoCommandBufferBuilder,
+        CommandBufferUsage, RenderPassBeginInfo, SubpassBeginInfo, SubpassContents,
     },
     device::Queue,
     image::view::ImageView,
@@ -72,27 +71,23 @@ impl RenderPassPlaceOverFrame {
         let img_dims: [u32; 2] = target.image().extent()[0..2].try_into().unwrap();
 
         // Create a primary command buffer builder.
-        let mut command_buffer_builder = RecordingCommandBuffer::new(
+        let mut command_buffer_builder = AutoCommandBufferBuilder::primary(
             self.command_buffer_allocator.clone(),
             self.gfx_queue.queue_family_index(),
-            CommandBufferLevel::Primary,
-            CommandBufferBeginInfo {
-                usage: CommandBufferUsage::OneTimeSubmit,
-                ..Default::default()
-            },
+            CommandBufferUsage::OneTimeSubmit,
         )
         .unwrap();
 
         // Begin the render pass.
         command_buffer_builder
             .begin_render_pass(
-                &RenderPassBeginInfo {
+                RenderPassBeginInfo {
                     clear_values: vec![Some([0.0; 4].into())],
                     ..RenderPassBeginInfo::framebuffer(
                         self.framebuffers[image_index as usize].clone(),
                     )
                 },
-                &SubpassBeginInfo {
+                SubpassBeginInfo {
                     contents: SubpassContents::SecondaryCommandBuffers,
                     ..Default::default()
                 },
@@ -106,16 +101,14 @@ impl RenderPassPlaceOverFrame {
         command_buffer_builder.execute_commands(cb).unwrap();
 
         // End the render pass.
-        command_buffer_builder
-            .end_render_pass(&Default::default())
-            .unwrap();
+        command_buffer_builder.end_render_pass(Default::default()).unwrap();
 
         // Build the command buffer.
-        let command_buffer = command_buffer_builder.end().unwrap();
+        let command_buffer = command_buffer_builder.build().unwrap();
 
         // Execute primary command buffer.
         let after_future = before_future
-            .then_execute(self.gfx_queue.clone(), command_buffer.into())
+            .then_execute(self.gfx_queue.clone(), command_buffer)
             .unwrap();
 
         after_future.boxed()

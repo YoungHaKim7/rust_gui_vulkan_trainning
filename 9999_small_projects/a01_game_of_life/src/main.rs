@@ -20,8 +20,10 @@ use std::{
 };
 use vulkano_util::renderer::VulkanoWindowRenderer;
 use winit::{
-    event::{ElementState, Event, MouseButton, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
+    application::ApplicationHandler,
+    event::{ElementState, MouseButton, StartCause, WindowEvent},
+    event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
+    window::WindowId,
 };
 
 pub const WINDOW_WIDTH: f32 = 1024.0;
@@ -30,6 +32,87 @@ pub const WINDOW2_WIDTH: f32 = 512.0;
 pub const WINDOW2_HEIGHT: f32 = 512.0;
 pub const SCALING: f32 = 2.0;
 
+/// Application state driven by the event loop.
+struct Application {
+    app: App,
+    cursor_pos: Vec2,
+    // An extremely crude way to handle input state... but works for this example.
+    mouse_is_pressed_w1: bool,
+    mouse_is_pressed_w2: bool,
+    time: Instant,
+}
+
+impl Application {
+    fn new() -> Application {
+        Application {
+            app: App::default(),
+            cursor_pos: Vec2::ZERO,
+            mouse_is_pressed_w1: false,
+            mouse_is_pressed_w2: false,
+            time: Instant::now(),
+        }
+    }
+
+    /// Runs a single iteration of the main loop.
+    fn tick(&mut self) {
+        // Draw life on windows if mouse is down.
+        draw_life(
+            &mut self.app,
+            self.cursor_pos,
+            self.mouse_is_pressed_w1,
+            self.mouse_is_pressed_w2,
+        );
+
+        // Compute life & render 60fps.
+        if (Instant::now() - self.time).as_secs_f64() > 1.0 / 60.0 {
+            compute_then_render_per_window(&mut self.app);
+            self.time = Instant::now();
+        }
+    }
+}
+
+impl ApplicationHandler for Application {
+    fn new_events(&mut self, event_loop: &ActiveEventLoop, cause: StartCause) {
+        if matches!(cause, StartCause::Init) {
+            event_loop.set_control_flow(ControlFlow::Poll);
+        }
+    }
+
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        // Create windows & pipelines.
+        self.app.open(event_loop);
+    }
+
+    fn window_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        window_id: WindowId,
+        event: WindowEvent,
+    ) {
+        if process_event(
+            &mut self.app,
+            window_id,
+            &event,
+            &mut self.cursor_pos,
+            &mut self.mouse_is_pressed_w1,
+            &mut self.mouse_is_pressed_w2,
+        ) {
+            event_loop.exit();
+            return;
+        }
+
+        self.tick();
+    }
+
+    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+        for (_, renderer) in self.app.windows.iter() {
+            renderer.window().request_redraw();
+        }
+
+        self.tick();
+    }
+}
+
 fn main() -> Result<(), impl Error> {
     println!("Welcome to Vulkano Game of Life\nUse the mouse to draw life on the grid(s)\n");
 
@@ -37,100 +120,56 @@ fn main() -> Result<(), impl Error> {
     let event_loop = EventLoop::new().unwrap();
 
     // Create app with vulkano context.
-    let mut app = App::default();
-    app.open(&event_loop);
+    let mut application = Application::new();
 
-    // Time & inputs...
-    let mut time = Instant::now();
-    let mut cursor_pos = Vec2::ZERO;
-
-    // An extremely crude way to handle input state... but works for this example.
-    let mut mouse_is_pressed_w1 = false;
-    let mut mouse_is_pressed_w2 = false;
-
-    event_loop.run(move |event, elwt| {
-        elwt.set_control_flow(ControlFlow::Poll);
-
-        if process_event(
-            &event,
-            &mut app,
-            &mut cursor_pos,
-            &mut mouse_is_pressed_w1,
-            &mut mouse_is_pressed_w2,
-        ) {
-            elwt.exit();
-            return;
-        } else if event == Event::AboutToWait {
-            for (_, renderer) in app.windows.iter() {
-                renderer.window().request_redraw();
-            }
-        }
-
-        // Draw life on windows if mouse is down.
-        draw_life(
-            &mut app,
-            cursor_pos,
-            mouse_is_pressed_w1,
-            mouse_is_pressed_w2,
-        );
-
-        // Compute life & render 60fps.
-        if (Instant::now() - time).as_secs_f64() > 1.0 / 60.0 {
-            compute_then_render_per_window(&mut app);
-            time = Instant::now();
-        }
-    })
+    event_loop.run_app(&mut application)
 }
 
-/// Processes a single event for an event loop.
+/// Processes a single window event.
 /// Returns true only if the window is to be closed.
 pub fn process_event(
-    event: &Event<()>,
     app: &mut App,
+    window_id: WindowId,
+    event: &WindowEvent,
     cursor_pos: &mut Vec2,
     mouse_pressed_w1: &mut bool,
     mouse_pressed_w2: &mut bool,
 ) -> bool {
-    if let Event::WindowEvent {
-        event, window_id, ..
-    } = &event
-    {
-        match event {
-            WindowEvent::CloseRequested => {
-                if *window_id == app.windows.primary_window_id().unwrap() {
-                    return true;
-                } else {
-                    // Destroy window by removing its renderer.
-                    app.windows.remove_renderer(*window_id);
-                    app.pipelines.remove(window_id);
-                }
+    match event {
+        WindowEvent::CloseRequested => {
+            if window_id == app.windows.primary_window_id().unwrap() {
+                return true;
+            } else {
+                // Destroy window by removing its renderer.
+                app.windows.remove_renderer(window_id);
+                app.pipelines.remove(&window_id);
             }
-            // Resize window and its images.
-            WindowEvent::Resized(..) | WindowEvent::ScaleFactorChanged { .. } => {
-                let vulkano_window = app.windows.get_renderer_mut(*window_id).unwrap();
-                vulkano_window.resize();
-            }
-            // Handle mouse position events.
-            WindowEvent::CursorMoved { position, .. } => {
-                *cursor_pos = Vec2::new(position.x as f32, position.y as f32)
-            }
-            // Handle mouse button events.
-            WindowEvent::MouseInput { state, button, .. } => {
-                let mut mouse_pressed = false;
-                if button == &MouseButton::Left && state == &ElementState::Pressed {
-                    mouse_pressed = true;
-                }
-                if button == &MouseButton::Left && state == &ElementState::Released {
-                    mouse_pressed = false;
-                }
-                if window_id == &app.windows.primary_window_id().unwrap() {
-                    *mouse_pressed_w1 = mouse_pressed;
-                } else {
-                    *mouse_pressed_w2 = mouse_pressed;
-                }
-            }
-            _ => (),
         }
+        // Resize window and its images.
+        WindowEvent::Resized(..) | WindowEvent::ScaleFactorChanged { .. } => {
+            let vulkano_window = app.windows.get_renderer_mut(window_id).unwrap();
+            vulkano_window.resize();
+        }
+        // Handle mouse position events.
+        WindowEvent::CursorMoved { position, .. } => {
+            *cursor_pos = Vec2::new(position.x as f32, position.y as f32)
+        }
+        // Handle mouse button events.
+        WindowEvent::MouseInput { state, button, .. } => {
+            let mut mouse_pressed = false;
+            if button == &MouseButton::Left && state == &ElementState::Pressed {
+                mouse_pressed = true;
+            }
+            if button == &MouseButton::Left && state == &ElementState::Released {
+                mouse_pressed = false;
+            }
+            if window_id == app.windows.primary_window_id().unwrap() {
+                *mouse_pressed_w1 = mouse_pressed;
+            } else {
+                *mouse_pressed_w2 = mouse_pressed;
+            }
+        }
+        _ => (),
     }
     false
 }
