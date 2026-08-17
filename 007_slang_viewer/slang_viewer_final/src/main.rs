@@ -40,6 +40,7 @@ struct VulkanApp {
     #[allow(dead_code)]
     swapchain_images: Vec<vk::Image>,
     swapchain_image_views: Vec<vk::ImageView>,
+    swapchain_extent: vk::Extent2D,
 
     render_pass: vk::RenderPass,
     pipeline_layout: vk::PipelineLayout,
@@ -471,8 +472,11 @@ impl VulkanApp {
             // Command pool
             //
 
-            let command_pool_info =
-                vk::CommandPoolCreateInfo::default().queue_family_index(queue_family_index);
+            // RESET_COMMAND_BUFFER lets draw() reset and re-record the
+            // command buffer every frame for the acquired swapchain image.
+            let command_pool_info = vk::CommandPoolCreateInfo::default()
+                .flags(vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER)
+                .queue_family_index(queue_family_index);
 
             let command_pool = device
                 .create_command_pool(&command_pool_info, None)
@@ -486,74 +490,6 @@ impl VulkanApp {
             let command_buffer = device
                 .allocate_command_buffers(&command_buffer_info)
                 .expect("command buffer")[0];
-
-            //
-            // Record command buffer
-            //
-
-            let begin_info = vk::CommandBufferBeginInfo::default();
-
-            device
-                .begin_command_buffer(command_buffer, &begin_info)
-                .expect("begin command buffer");
-
-            let clear_value = vk::ClearValue {
-                color: vk::ClearColorValue {
-                    float32: [0.05, 0.05, 0.05, 1.0],
-                },
-            };
-
-            let clear_values = [clear_value];
-
-            for (i, &framebuffer) in framebuffers.iter().enumerate() {
-                //
-                // We only have one command buffer here.
-                //
-                // For a minimal example, record the first
-                // framebuffer only.
-                //
-
-                if i != 0 {
-                    continue;
-                }
-
-                let render_begin = vk::RenderPassBeginInfo::default()
-                    .render_pass(render_pass)
-                    .framebuffer(framebuffer)
-                    .render_area(vk::Rect2D {
-                        offset: vk::Offset2D { x: 0, y: 0 },
-                        extent,
-                    })
-                    .clear_values(&clear_values);
-
-                device.cmd_begin_render_pass(
-                    command_buffer,
-                    &render_begin,
-                    vk::SubpassContents::INLINE,
-                );
-
-                device.cmd_bind_pipeline(
-                    command_buffer,
-                    vk::PipelineBindPoint::GRAPHICS,
-                    graphics_pipeline,
-                );
-
-                //
-                // HERE!
-                //
-                // No vertex buffer.
-                //
-                // Draw 3 vertices.
-                //
-
-                device.cmd_draw(command_buffer, 3, 1, 0, 0);
-
-                device.cmd_end_render_pass(command_buffer);
-            }
-
-            device
-                .end_command_buffer(command_buffer)
-                .expect("end command buffer");
 
             //
             // Synchronization
@@ -585,6 +521,7 @@ impl VulkanApp {
                 swapchain,
                 swapchain_images,
                 swapchain_image_views,
+                swapchain_extent: extent,
                 render_pass,
                 pipeline_layout,
                 graphics_pipeline,
@@ -595,6 +532,70 @@ impl VulkanApp {
                 render_finished,
                 in_flight,
             }
+        }
+    }
+
+    //
+    // Recorded fresh every frame for the swapchain image that was just
+    // acquired. The swapchain cycles through several images; recording
+    // once against a single framebuffer would present unrendered images
+    // and make the triangle blink.
+    //
+
+    unsafe fn record_command_buffer(&self, image_index: u32) {
+        unsafe {
+            self.device
+                .begin_command_buffer(
+                    self.command_buffer,
+                    &vk::CommandBufferBeginInfo::default(),
+                )
+                .expect("begin command buffer");
+
+            let clear_value = vk::ClearValue {
+                color: vk::ClearColorValue {
+                    float32: [0.05, 0.05, 0.05, 1.0],
+                },
+            };
+
+            let clear_values = [clear_value];
+
+            let render_begin = vk::RenderPassBeginInfo::default()
+                .render_pass(self.render_pass)
+                .framebuffer(self.framebuffers[image_index as usize])
+                .render_area(vk::Rect2D {
+                    offset: vk::Offset2D { x: 0, y: 0 },
+                    extent: self.swapchain_extent,
+                })
+                .clear_values(&clear_values);
+
+            self.device.cmd_begin_render_pass(
+                self.command_buffer,
+                &render_begin,
+                vk::SubpassContents::INLINE,
+            );
+
+            self.device.cmd_bind_pipeline(
+                self.command_buffer,
+                vk::PipelineBindPoint::GRAPHICS,
+                self.graphics_pipeline,
+            );
+
+            //
+            // HERE!
+            //
+            // No vertex buffer.
+            //
+            // Draw 3 vertices.
+            //
+
+            self.device
+                .cmd_draw(self.command_buffer, 3, 1, 0, 0);
+
+            self.device.cmd_end_render_pass(self.command_buffer);
+
+            self.device
+                .end_command_buffer(self.command_buffer)
+                .expect("end command buffer");
         }
     }
 
@@ -617,6 +618,15 @@ impl VulkanApp {
                     vk::Fence::null(),
                 )
                 .expect("acquire image");
+
+            self.device
+                .reset_command_buffer(
+                    self.command_buffer,
+                    vk::CommandBufferResetFlags::empty(),
+                )
+                .expect("reset command buffer");
+
+            self.record_command_buffer(image_index);
 
             let wait_semaphores = [self.image_available];
 
