@@ -619,13 +619,6 @@ impl VulkanApp {
                 )
                 .expect("acquire image");
 
-            self.device
-                .reset_command_buffer(
-                    self.command_buffer,
-                    vk::CommandBufferResetFlags::empty(),
-                )
-                .expect("reset command buffer");
-
             self.record_command_buffer(image_index);
 
             let wait_semaphores = [self.image_available];
