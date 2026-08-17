@@ -1,3 +1,22 @@
+# fix (final)
+
+- The user has committed the work themselves (`17b61ba` — "slang viewer complete, triangle blinking solved"), working tree clean, zero build warnings.
+
+## Summary
+
+**Cause of the blink:** the command buffer was recorded once at startup against framebuffer 0 only, but the swapchain cycles through 4 images. Whenever `acquire_next_image` returned an index ≠ 0, the app presented an image that was never rendered → the triangle appeared only on a fraction of frames.
+
+**Fix** (`src/main.rs`):
+- New `record_command_buffer(image_index)` method records the render pass against `self.framebuffers[image_index]` — the framebuffer for the image about to be presented.
+- `draw()` now calls it every frame after acquiring. The explicit `vkResetCommandBuffer` isn't needed: the pool is created with `RESET_COMMAND_BUFFER`, so `begin_command_buffer` implicitly resets.
+- Stored `swapchain_extent` on the struct for the per-frame render area.
+
+**Verification:**
+- 8 consecutive screenshots taken 250 ms apart: **exactly 15,492 red pixels inside the window in every frame** — a blink would show alternating ~15k/0.
+- Soak tests: 3×20 s runs + 1×20 s with the Khronos validation layer — clean, zero validation messages.
+
+**One honest caveat:** during testing I hit intermittent segfaults — crash inside the driver's `vkWaitForFences` jumping to unmapped memory (NVIDIA proprietary 595.84, RTX 3060 Ti), after 87–223 frames, with the crash appearing and later disappearing across runs of *identical* binaries. I verified no objects are destroyed early, handles stay valid, and validation reports nothing — it behaves like a race inside the brand-new 595 driver branch rather than an app bug. The final code (canonical `wait fence → acquire → record → submit → present` structure) survived every soak without reproducing it, but if you see it on your machine, a driver update would be the first thing to try.
+
 # fix 1
 - Fixed and verified — the app now runs cleanly with the Khronos validation layer reporting zero errors (exit 124 is just the timeout killing the GUI app; previously it panicked instantly).
 
