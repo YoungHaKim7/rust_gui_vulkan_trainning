@@ -34,6 +34,8 @@
 |memory management|GPU memory and synchronization are usually hidden |	Explicit control over memory management and synchronization|
 |checking at runtime|Extensive error checking |	Vulkan drivers do no error checking at runtime;<br> there is a validation layer for developers |
 
+- Vulkan설명(나무위키) https://namu.wiki/w/Vulkan(API)
+
 - https://en.wikipedia.org/wiki/Vulkan
 
 - 그림으로 이해
