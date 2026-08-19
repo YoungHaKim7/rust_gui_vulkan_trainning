@@ -1,7 +1,12 @@
 # vulkan tutorial rust code
 - https://github.com/bwasty/vulkan-tutorial-rs
+  - https://vulkan-tutorial.com/code/
+  - https://github.com/Overv/VulkanTutorial
 
+- https://vulkan-tutorial.com/
+  - https://github.com/Overv/VulkanTutorial
 - 첫시작은 Vlukano구만
+  - https://vulkano.rs/
   - https://github.com/vulkano-rs/vulkano/tree/master/examples
 
 
