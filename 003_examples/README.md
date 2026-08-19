@@ -1,4 +1,8 @@
-- https://github.com/vulkano-rs/vulkano/tree/master/examples
+# vulkan tutorial rust code
+- https://github.com/bwasty/vulkan-tutorial-rs
+
+- 첫시작은 Vlukano구만
+  - https://github.com/vulkano-rs/vulkano/tree/master/examples
 
 
 # Vulkano-Shaders
