@@ -1,3 +1,6 @@
+# Vulkan개념잡기(잘 정리됨)
+- https://namu.wiki/w/Vulkan(API)
+
 # vulkano examples
 - https://github.com/vulkano-rs/vulkano/tree/master/examples
 
