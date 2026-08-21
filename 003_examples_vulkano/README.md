@@ -1,5 +1,7 @@
 # Vulkan개념잡기(잘 정리됨)
 - https://namu.wiki/w/Vulkan(API)
+  - 내가 만든 프로그램 문서로 설명 하기 좋다.
+    - https://docs.rs/slang_files_viewer_shaders/latest/slang_files_viewer_shaders/#2-the-vulkan-object-model
 
 # vulkano examples
 - https://github.com/vulkano-rs/vulkano/tree/master/examples
