@@ -138,7 +138,7 @@ const SAVE_FILE: &str = "todos.txt";
 const ATLAS_COLS: u32 = 16;
 const CELL_PX: u32 = 8;
 const ATLAS_CELLS: u32 = 96;
-const ATLAS_ROWS: u32 = (ATLAS_CELLS + ATLAS_COLS - 1) / ATLAS_COLS;
+const ATLAS_ROWS: u32 = ATLAS_CELLS.div_ceil(ATLAS_COLS);
 const ATLAS_W: u32 = ATLAS_COLS * CELL_PX;
 const ATLAS_H: u32 = ATLAS_ROWS * CELL_PX;
 
@@ -305,8 +305,8 @@ impl Ui {
     }
 
     fn glyph(&mut self, x: f32, y: f32, byte: u8, scale: f32, color: [f32; 4]) -> f32 {
-        if byte >= 32 {
-            if let Some(cell) = font::cell_index(byte) {
+        if byte >= 32
+            && let Some(cell) = font::cell_index(byte) {
                 let g = GLYPH_ADV * scale;
                 const FRACS: [[f32; 2]; 6] = [
                     [0.0, 0.0],
@@ -324,7 +324,6 @@ impl Ui {
                     });
                 }
             }
-        }
         x + GLYPH_ADV * scale
     }
 
@@ -539,7 +538,7 @@ fn delete_button(ui: &mut Ui, r: Rect) -> bool {
 }
 
 fn caret_blinking(since: Instant) -> bool {
-    since.elapsed().as_millis() / 450 % 2 == 0
+    (since.elapsed().as_millis() / 450).is_multiple_of(2)
 }
 
 fn draw_ui(todos: &mut Todos, save_path: &Path, ui: &mut Ui, w: f32, h: f32) {
@@ -791,7 +790,9 @@ struct RenderContext {
     pipeline: Arc<GraphicsPipeline>,
     descriptor_set: Arc<DescriptorSet>,
     viewport: Viewport,
-    vertex_buffer: Subbuffer<[UiVertex]>,
+    // One vertex buffer per swapchain image. The image we just acquired is guaranteed to no
+    // longer be in use by the GPU, so its buffer can always be written without a conflict.
+    vertex_buffers: Vec<Subbuffer<[UiVertex]>>,
     recreate_swapchain: bool,
     previous_frame_end: Option<Box<dyn GpuFuture>>,
 }
@@ -1167,20 +1168,24 @@ impl ApplicationHandler for App {
             max_depth: 1.0,
         };
 
-        let vertex_buffer = Buffer::new_slice(
-            &self.memory_allocator,
-            &BufferCreateInfo {
-                usage: BufferUsage::VERTEX_BUFFER,
-                ..Default::default()
-            },
-            &AllocationCreateInfo {
-                memory_type_filter: MemoryTypeFilter::PREFER_DEVICE
-                    | MemoryTypeFilter::HOST_SEQUENTIAL_WRITE,
-                ..Default::default()
-            },
-            MAX_VERTICES as DeviceSize,
-        )
-        .unwrap();
+        let vertex_buffers = (0..attachment_image_views.len())
+            .map(|_| {
+                Buffer::new_slice(
+                    &self.memory_allocator,
+                    &BufferCreateInfo {
+                        usage: BufferUsage::VERTEX_BUFFER,
+                        ..Default::default()
+                    },
+                    &AllocationCreateInfo {
+                        memory_type_filter: MemoryTypeFilter::PREFER_DEVICE
+                            | MemoryTypeFilter::HOST_SEQUENTIAL_WRITE,
+                        ..Default::default()
+                    },
+                    MAX_VERTICES as DeviceSize,
+                )
+                .unwrap()
+            })
+            .collect::<Vec<_>>();
 
         self.rcx = Some(RenderContext {
             window,
@@ -1189,7 +1194,7 @@ impl ApplicationHandler for App {
             pipeline,
             descriptor_set,
             viewport,
-            vertex_buffer,
+            vertex_buffers,
             recreate_swapchain: false,
             previous_frame_end: Some(sync::now(self.device.clone()).boxed()),
         });
@@ -1245,14 +1250,13 @@ impl ApplicationHandler for App {
     }
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
-        if !self.dump_done {
-            if let Some(path) = std::env::var_os("TODO_DUMP_FRAME") {
+        if !self.dump_done
+            && let Some(path) = std::env::var_os("TODO_DUMP_FRAME") {
                 self.dump_done = true;
                 self.dump_frame(&path.to_string_lossy());
                 event_loop.exit();
                 return;
             }
-        }
         if let Some(rcx) = self.rcx.as_ref() {
             rcx.window.request_redraw();
         }
@@ -1274,6 +1278,8 @@ impl App {
 
         rcx.previous_frame_end.as_mut().unwrap().cleanup_finished();
 
+        let memory_allocator = self.memory_allocator.clone();
+
         if rcx.recreate_swapchain {
             let (new_swapchain, new_images) = rcx
                 .swapchain
@@ -1287,6 +1293,24 @@ impl App {
             rcx.attachment_image_views = new_images
                 .iter()
                 .map(|image| ImageView::new_default(image).unwrap())
+                .collect::<Vec<_>>();
+            rcx.vertex_buffers = (0..rcx.attachment_image_views.len())
+                .map(|_| {
+                    Buffer::new_slice(
+                        &memory_allocator,
+                        &BufferCreateInfo {
+                            usage: BufferUsage::VERTEX_BUFFER,
+                            ..Default::default()
+                        },
+                        &AllocationCreateInfo {
+                            memory_type_filter: MemoryTypeFilter::PREFER_DEVICE
+                                | MemoryTypeFilter::HOST_SEQUENTIAL_WRITE,
+                            ..Default::default()
+                        },
+                        MAX_VERTICES as DeviceSize,
+                    )
+                    .unwrap()
+                })
                 .collect::<Vec<_>>();
             rcx.viewport.extent = window_size.into();
             rcx.recreate_swapchain = false;
@@ -1312,11 +1336,6 @@ impl App {
             });
         }
 
-        {
-            let mut guard = rcx.vertex_buffer.write().unwrap();
-            guard[..ui.verts.len()].copy_from_slice(&ui.verts);
-        }
-
         let (image_index, suboptimal, acquire_future) = match acquire_next_image(
             rcx.swapchain.clone(),
             None,
@@ -1334,6 +1353,15 @@ impl App {
 
         if suboptimal {
             rcx.recreate_swapchain = true;
+        }
+
+        // The image we just acquired cannot be in use by the GPU anymore, so the vertex buffer
+        // belonging to it is safe to overwrite. Writing here (instead of before acquiring) is
+        // what prevents `AccessConflict(DeviceRead)` when frames are still in flight.
+        let vertex_buffer = rcx.vertex_buffers[image_index as usize].clone();
+        {
+            let mut guard = vertex_buffer.write().unwrap();
+            guard[..ui.verts.len()].copy_from_slice(&ui.verts);
         }
 
         let mut builder = AutoCommandBufferBuilder::primary(
@@ -1375,7 +1403,7 @@ impl App {
                 },
             )
             .unwrap()
-            .bind_vertex_buffers(0, rcx.vertex_buffer.clone())
+            .bind_vertex_buffers(0, vertex_buffer.clone())
             .unwrap();
 
         unsafe { builder.draw(vertex_count, 1, 0, 0) }.unwrap();
@@ -1470,15 +1498,14 @@ impl App {
                     | MemoryTypeFilter::HOST_RANDOM_ACCESS,
                 ..Default::default()
             },
-            std::iter::repeat(0u8).take((width * height * 4) as usize),
+            std::iter::repeat_n(0u8, (width * height * 4) as usize),
         )
         .unwrap();
 
-        if let Some(rcx) = self.rcx.as_mut() {
-            if let Some(previous) = rcx.previous_frame_end.take() {
+        if let Some(rcx) = self.rcx.as_mut()
+            && let Some(previous) = rcx.previous_frame_end.take() {
                 drop(previous);
             }
-        }
 
         let mut builder = AutoCommandBufferBuilder::primary(
             self.command_buffer_allocator.clone(),
@@ -1549,7 +1576,7 @@ impl App {
             Format::B8G8R8A8_UNORM | Format::B8G8R8A8_SRGB | Format::B8G8R8A8_SNORM
         );
         let mut ppm = format!("P6\n{width} {height}\n255\n").into_bytes();
-        for px in data.chunks_exact(4) {
+        for px in data.as_chunks::<4>().0 {
             if bgra {
                 ppm.extend_from_slice(&[px[2], px[1], px[0]]);
             } else {
