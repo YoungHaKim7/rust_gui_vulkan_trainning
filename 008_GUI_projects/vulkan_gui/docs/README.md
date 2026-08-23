@@ -18,6 +18,39 @@ One note: `dump_frame` writes a PPM (`P6`) regardless of the filename extension 
 
 <hr />
 
+```rust
+format: Format::R8G8B8A8_UNORM,
+        format: color_format,
+```
+
+```bash
+python3 -c "
+from PIL import Image
+im = Image.open('/tmp/opencode/todo_frame.ppm').convert('RGB')
+im.save('/tmp/opencode/todo_frame.png')
+print(im.size)
+" 2>/dev/null || (command -v magick && magick /tmp/opencode/todo_frame.ppm /tmp/opencode/todo_frame.png) || echo "no converter"
+/usr/bin/magick
+```
+
+
+Rendering works, but the image is vertically flipped — Vulkan's NDC has +Y pointing down (unlike OpenGL), so my negation copied from the sibling's y-up camera math inverts the UI. Removing the flip:
+← Edit src/main.rs
+```rs
+            void main() {
+                v_uv = uv;
+                v_color = color;
+                vec2 ndc = pos / pc.screen.xy * 2.0 - 1.0;
+                gl_Position = vec4(ndc.x, -ndc.y, 0.0, 1.0);
+                gl_Position = vec4(ndc.x, ndc.y, 0.0, 1.0);
+            }
+        ",
+    }
+}
+```
+
+<hr />
+
 # New session - 2026-08-23T15:58:50.581Z
 
 **Session ID:** ses_fd0a7672bffexNgHvKYO8FNjWp
