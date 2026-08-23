@@ -49,7 +49,40 @@ Rendering works, but the image is vertically flipped — Vulkan's NDC has +Y poi
 }
 ```
 
+## 만드는거 공부GUI
+- https://github.com/YoungHaKim7/todo_app_vulkan
+Done. The 1,629-line `main.rs` is now 11 focused files, split by function:
+
+| File            | Lines | Responsibility                                                                                        |
+| --------------- | ----- | ----------------------------------------------------------------------------------------------------- |
+| `main.rs`       | 31    | Entry point + module map                                                                              |
+| `app.rs`        | 161   | `App` state, winit event handling, keyboard input                                                     |
+| `renderer.rs`   | 778   | `GpuContext` (device/queue/atlas setup), `RenderContext` (swapchain/pipeline), `redraw`, `dump_frame` |
+| `ui/mod.rs`     | 200   | Immediate-mode core: `UiVertex`, `Rect`, `Ui` draw list, text metrics                                 |
+| `ui/screen.rs`  | 238   | The ToDo screen layout (`draw_ui`)                                                                    |
+| `ui/widgets.rs` | 75    | button, checkbox, delete, caret blink                                                                 |
+| `ui/theme.rs`   | 37    | Palette + button styles                                                                               |
+| `todos.rs`      | 130   | Model, persistence, `sanitize` + tests                                                                |
+| `atlas.rs`      | 56    | Atlas baking + UV math                                                                                |
+| `font.rs`       | 122   | Glyph data + its test                                                                                 |
+
+Two small structural wins along the way (everything else moved verbatim):
+
+- **`GpuContext`** — the once-per-process Vulkan objects (instance, device, queue, allocators, sampler, atlas) extracted from `App::new`; `RenderContext::new` now holds what was `resumed()`'s body, so `resumed` is one line.
+- **`create_vertex_buffers()`** — deduplicates the identical buffer-creation block that appeared in both `resumed` and the swapchain-recreate path.
+
+One caveat worth knowing: `redraw`/`dump_frame` stay as `impl App` blocks but now live in `renderer.rs` — Rust merges impls across modules, which keeps the moved code identical.
+
+**Verification** — the refactor is provably behavior-preserving:
+- Rendered a frame with `TODO_DUMP_FRAME` from both the old code (via `git stash`) and the new code: **byte-identical PPM output**
+- `cargo test` — 3/3 pass (tests moved next to their code: font → `font.rs`, sanitize/persistence → `todos.rs`)
+- `cargo clippy --all-targets` — 0 warnings; `cargo fmt --check` — clean
+- Shader macro still resolves `../assets/` correctly (vulkano resolves paths relative to the invoking file, and `shaders.rs` is in the same `src/` dir)
+
+Changes are uncommitted — say the word if you want a commit.
+
 <hr />
+
 
 # New session - 2026-08-23T15:58:50.581Z
 
