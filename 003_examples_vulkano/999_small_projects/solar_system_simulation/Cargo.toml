@@ -1,0 +1,9 @@
+[package]
+name = "solar_system_simulation"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+vulkano = { git = "https://github.com/vulkano-rs/vulkano" }
+vulkano-shaders = { git = "https://github.com/vulkano-rs/vulkano" }
+winit = "0.30.13"
