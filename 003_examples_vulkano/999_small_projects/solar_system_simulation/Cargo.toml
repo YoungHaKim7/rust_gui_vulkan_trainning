@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-vulkano = { git = "https://github.com/vulkano-rs/vulkano" }
-vulkano-shaders = { git = "https://github.com/vulkano-rs/vulkano" }
+vulkano = { git = "https://github.com/vulkano-rs/vulkano", rev="fb4cfdb" }
+vulkano-shaders = { git = "https://github.com/vulkano-rs/vulkano", rev="fb4cfdb"}
 winit = "0.30.13"
