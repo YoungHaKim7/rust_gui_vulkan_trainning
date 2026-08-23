@@ -1,5 +1,7 @@
-# Result
+# 최종 완성본
+- https://github.com/YoungHaKim7/solar_system_simulation_vulkan_rust
 
+# Result
 
 ```bash
 Solar system simulation
