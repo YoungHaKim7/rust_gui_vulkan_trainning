@@ -1,3 +1,28 @@
+# cargo clippy
+
+All 6 clippy errors are fixed, and the build is clean:
+
+```text
+Checking vulkan_woodeneye v0.1.0
+Finished `dev` profile ... in 0.60s
+```
+
+**`src/app.rs`**
+- `collapsible_if` — collapsed the nested press-check/`whose_mouse` into one `if state == ElementState::Pressed && let Some(index) = ...` (edition 2024 let-chain)
+- `clone_on_copy` — `region.scissor.clone()` → `region.scissor`
+
+**`src/game.rs`**
+- `needless_range_loop` in `shoot` — `for (i, target) in players.iter_mut().enumerate().take(players_len)`, dropping the separate `&mut players[i]` (the shooter's data is already read into scalars before the loop, so no borrow conflict)
+- `needless_range_loop` in `init_players` — same `enumerate()` pattern, body rewritten from `players[i].field` to `player.field`
+
+**`src/scene.rs`**
+- `too_many_arguments` — grouped the six endpoint coordinates into two `[f32; 3]` params: `project_clipped_segment(a, b, z, w)`; the call site now passes `[ax, ay, az], [bx, by, bz]`
+- `needless_range_loop` — `for (j, target) in players.iter().enumerate().take(players_len)` in the draw-other-players loop
+
+I also ran `cargo fmt`, which touched a few pre-existing formatting nits (comment alignment in `Player`, a signature wrap in `whose_mouse`, and a collapsed `let` in `resumed`) alongside the new code — no semantic changes.
+
+<hr />
+
 # 코드 분할
 
 Done. The single 1,242-line `main.rs` is now split into 6 files by function, building cleanly with no new warnings. The game logic was moved verbatim — only visibility (`pub(crate)`) and imports changed.
