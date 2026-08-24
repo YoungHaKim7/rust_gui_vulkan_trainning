@@ -1,3 +1,37 @@
+# 코드 분할
+
+Done. The single 1,242-line `main.rs` is now split into 6 files by function, building cleanly with no new warnings. The game logic was moved verbatim — only visibility (`pub(crate)`) and imports changed.
+
+## New structure
+
+| File              | Lines | Responsibility                                                                                                                                                                                        |
+| ----------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/main.rs`     | 42    | Module declarations, `main()`, crate overview comment                                                                                                                                                 |
+| `src/game.rs`     | 246   | `Player`, `shoot`, `update` (physics), `init_players`, `whose_mouse`/`whose_keyboard`, PRNG, `MAX_PLAYER_COUNT`, `LOOK_SENSITIVITY`                                                                   |
+| `src/map.rs`      | 44    | `MAP_BOX_SCALE`, `MAP_BOX_EDGES_LEN`, `init_edges`                                                                                                                                                    |
+| `src/scene.rs`    | 264   | `LineVertex`, `RegionGeometry`, `project_clipped_segment`, `build_scene` (CPU-side clipping/projection)                                                                                               |
+| `src/renderer.rs` | 315   | All Vulkan: `Gpu` (instance/device/queue/allocators), `RenderContext`, shaders (`vs`/`fs`), `PushConstants`, `create_swapchain`/`create_render_pass`/`create_pipeline`, `window_size_dependent_setup` |
+| `src/app.rs`      | 428   | `App` state, `ApplicationHandler` (window/input/device events), `redraw` draw loop                                                                                                                    |
+
+## Beyond pure moves
+
+The two giant init blocks inside `App::new` and `resumed` were extracted into renderer functions so app.rs contains no Vulkan setup logic:
+
+- **`Gpu::new`** — instance, physical-device selection, device, queue, allocators (was ~90 lines of `App::new`)
+- **`create_swapchain` / `create_render_pass` / `create_pipeline`** — extracted from `resumed` (I verified the vulkano git-rev signatures for `Surface`, `Swapchain::new`, `Format`, and the winit `PhysicalSize → [u32; 2]` conversion before writing them)
+
+## Module dependency graph
+
+```
+main → app → { game → map, map, scene → game, renderer → scene }
+```
+
+The only fixes needed after the split were two trait imports that methods require in scope: `GpuFuture` (for `.boxed()`/`.join()` in app.rs) and `Vertex` (for `LineVertex::per_vertex()` in renderer.rs).
+
+The 6 clippy warnings that remain are pre-existing style lints in the SDL-identical game code (loop-index patterns, collapsible `if`) — I left those untouched since the port deliberately keeps that code identical to the original. Changes are uncommitted, so `git diff` / `git checkout` can review or revert.
+
+<hr />
+
 # key fix
 - All fixed and verified. Note: your repo is the **Vulkan/vulkano/winit port**, not the SDL code you pasted — the SDL version was the reference, and comparing against the original C demo surfaced the real bugs.
 
