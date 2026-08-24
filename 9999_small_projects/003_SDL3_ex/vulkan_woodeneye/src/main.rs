@@ -130,11 +130,10 @@ fn shoot(shooter: usize, players: &mut [Player], players_len: usize) {
     let vz = -cos_yaw * cos_pitch;
 
     // Iterate through other players to check for hits
-    for i in 0..players_len {
+    for (i, target) in players.iter_mut().enumerate().take(players_len) {
         if i == shooter {
             continue; // Skip the shooter themselves
         }
-        let target = &mut players[i];
         let mut hit = 0; // Initialize hit counter for head and feet check
         for j in 0..2 {
             // Check head and feet
@@ -247,54 +246,54 @@ fn update(players: &mut [Player], players_len: usize, dt_ns: u64) {
 
 fn init_players(players: &mut [Player], len: usize) {
     // Initialize player positions. Players are placed in a grid-like pattern.
-    for i in 0..len {
-        players[i].radius = 0.5;
-        players[i].height = 1.5;
+    for (i, player) in players.iter_mut().enumerate().take(len) {
+        player.radius = 0.5;
+        player.height = 1.5;
 
         // Spawn halfway between the center and each wall, standing on the floor: `update`
         // clamps y to height - scale, which is exactly the standing eye height, so nobody
         // starts floating in mid-air.
         let half = MAP_BOX_SCALE as f64 * 0.5;
-        players[i].pos[0] = half * if i & 1 != 0 { -1.0 } else { 1.0 };
-        players[i].pos[1] = players[i].height as f64 - MAP_BOX_SCALE as f64;
-        players[i].pos[2] =
+        player.pos[0] = half * if i & 1 != 0 { -1.0 } else { 1.0 };
+        player.pos[1] = player.height as f64 - MAP_BOX_SCALE as f64;
+        player.pos[2] =
             half * if i & 1 != 0 { -1.0 } else { 1.0 } * if i & 2 != 0 { -1.0 } else { 1.0 };
 
-        players[i].vel[0] = 0.0;
-        players[i].vel[1] = 0.0;
-        players[i].vel[2] = 0.0;
+        player.vel[0] = 0.0;
+        player.vel[1] = 0.0;
+        player.vel[2] = 0.0;
 
         // The bitwise operations distribute the players around the origin.
-        players[i].yaw = 0x20000000
+        player.yaw = 0x20000000
             + if i & 1 != 0 { 0x80000000 } else { 0 }
             + if i & 2 != 0 { 0x40000000 } else { 0 };
 
-        players[i].pitch = -0x08000000;
+        player.pitch = -0x08000000;
 
-        players[i].wasd = 0;
+        player.wasd = 0;
 
-        players[i].mouse = None;
-        players[i].keyboard = None;
+        player.mouse = None;
+        player.keyboard = None;
 
         // Generate a variety of colors per player index (unchanged from the SDL version).
-        players[i].color[0] = if (1 << (i / 2)) & 2 != 0 { 0 } else { 0xff };
-        players[i].color[1] = if (1 << (i / 2)) & 1 != 0 { 0 } else { 0xff };
-        players[i].color[2] = if (1 << (i / 2)) & 4 != 0 { 0 } else { 0xff };
+        player.color[0] = if (1 << (i / 2)) & 2 != 0 { 0 } else { 0xff };
+        player.color[1] = if (1 << (i / 2)) & 1 != 0 { 0 } else { 0xff };
+        player.color[2] = if (1 << (i / 2)) & 4 != 0 { 0 } else { 0xff };
 
-        players[i].color[0] = if i & 1 != 0 {
-            players[i].color[0]
+        player.color[0] = if i & 1 != 0 {
+            player.color[0]
         } else {
-            !players[i].color[0]
+            !player.color[0]
         };
-        players[i].color[1] = if i & 1 != 0 {
-            players[i].color[1]
+        player.color[1] = if i & 1 != 0 {
+            player.color[1]
         } else {
-            !players[i].color[1]
+            !player.color[1]
         };
-        players[i].color[2] = if i & 1 != 0 {
-            players[i].color[2]
+        player.color[2] = if i & 1 != 0 {
+            player.color[2]
         } else {
-            !players[i].color[2]
+            !player.color[2]
         };
     }
 }
@@ -407,41 +406,40 @@ struct RegionGeometry {
 // Port of the original `draw_clipped_segment`, minus the actual drawing: returns the projected
 // 2D offsets from the viewport origin after clipping against the near plane z = -w.
 fn project_clipped_segment(
-    mut ax: f32,
-    mut ay: f32,
-    mut az: f32,
-    mut bx: f32,
-    mut by: f32,
-    mut bz: f32,
+    mut a: [f32; 3],
+    mut b: [f32; 3],
     z: f32,
     w: f32,
 ) -> Option<([f32; 2], [f32; 2])> {
     // Both points behind the clipping plane: nothing to draw
-    if az >= -w && bz >= -w {
+    if a[2] >= -w && b[2] >= -w {
         return None;
     }
 
-    let dx = ax - bx;
-    let dy = ay - by;
+    let dx = a[0] - b[0];
+    let dy = a[1] - b[1];
 
     // Clip the first point (A) if it's behind the clipping plane
-    if az > -w {
-        let t = (-w - bz) / (az - bz);
-        ax = bx + dx * t;
-        ay = by + dy * t;
-        az = -w;
+    if a[2] > -w {
+        let t = (-w - b[2]) / (a[2] - b[2]);
+        a[0] = b[0] + dx * t;
+        a[1] = b[1] + dy * t;
+        a[2] = -w;
     }
 
     // Clip the second point (B) if it's behind the clipping plane
-    if bz > -w {
-        let t = (-w - az) / (bz - az);
-        bx = ax - dx * t;
-        by = ay - dy * t;
-        bz = -w;
+    if b[2] > -w {
+        let t = (-w - a[2]) / (b[2] - a[2]);
+        b[0] = a[0] - dx * t;
+        b[1] = a[1] - dy * t;
+        b[2] = -w;
     }
 
     // Perspective projection: project the 3D points to 2D offsets
-    Some(([-z * ax / az, -z * ay / az], [-z * bx / bz, -z * by / bz]))
+    Some((
+        [-z * a[0] / a[2], -z * a[1] / a[2]],
+        [-z * b[0] / b[2], -z * b[1] / b[2]],
+    ))
 }
 
 // Builds all line-segment vertices for the current frame. This mirrors the original `draw`
@@ -521,27 +519,30 @@ fn build_scene(
 
         // Draw each edge of the map (transformed exactly like the SDL version)
         for line in edges.iter() {
-            let ax = mat[0] * (line[0] as f64 - x0) as f32
-                + mat[1] * (line[1] as f64 - y0) as f32
-                + mat[2] * (line[2] as f64 - z0) as f32;
-            let ay = mat[3] * (line[0] as f64 - x0) as f32
-                + mat[4] * (line[1] as f64 - y0) as f32
-                + mat[5] * (line[2] as f64 - z0) as f32;
-            let az = mat[6] * (line[0] as f64 - x0) as f32
-                + mat[7] * (line[1] as f64 - y0) as f32
-                + mat[8] * (line[2] as f64 - z0) as f32;
-            let bx = mat[0] * (line[3] as f64 - x0) as f32
-                + mat[1] * (line[4] as f64 - y0) as f32
-                + mat[2] * (line[5] as f64 - z0) as f32;
-            let by = mat[3] * (line[3] as f64 - x0) as f32
-                + mat[4] * (line[4] as f64 - y0) as f32
-                + mat[5] * (line[5] as f64 - z0) as f32;
-            let bz = mat[6] * (line[3] as f64 - x0) as f32
-                + mat[7] * (line[4] as f64 - y0) as f32
-                + mat[8] * (line[5] as f64 - z0) as f32;
+            let a = [
+                mat[0] * (line[0] as f64 - x0) as f32
+                    + mat[1] * (line[1] as f64 - y0) as f32
+                    + mat[2] * (line[2] as f64 - z0) as f32,
+                mat[3] * (line[0] as f64 - x0) as f32
+                    + mat[4] * (line[1] as f64 - y0) as f32
+                    + mat[5] * (line[2] as f64 - z0) as f32,
+                mat[6] * (line[0] as f64 - x0) as f32
+                    + mat[7] * (line[1] as f64 - y0) as f32
+                    + mat[8] * (line[2] as f64 - z0) as f32,
+            ];
+            let b = [
+                mat[0] * (line[3] as f64 - x0) as f32
+                    + mat[1] * (line[4] as f64 - y0) as f32
+                    + mat[2] * (line[5] as f64 - z0) as f32,
+                mat[3] * (line[3] as f64 - x0) as f32
+                    + mat[4] * (line[4] as f64 - y0) as f32
+                    + mat[5] * (line[5] as f64 - z0) as f32,
+                mat[6] * (line[3] as f64 - x0) as f32
+                    + mat[7] * (line[4] as f64 - y0) as f32
+                    + mat[8] * (line[5] as f64 - z0) as f32,
+            ];
 
-            if let Some((pa, pb)) = project_clipped_segment(ax, ay, az, bx, by, bz, cam_origin, 1.0)
-            {
+            if let Some((pa, pb)) = project_clipped_segment(a, b, cam_origin, 1.0) {
                 // Convert to screen coordinates (same truncation as SDL Point::new)
                 vertices.push(LineVertex {
                     position: [
@@ -561,11 +562,10 @@ fn build_scene(
         }
 
         // Draw other players
-        for j in 0..players_len {
+        for (j, target) in players.iter().enumerate().take(players_len) {
             if i == j {
                 continue; // Don't draw the current player
             }
-            let target = &players[j];
             let color = [target.color[0], target.color[1], target.color[2], 255];
 
             // Draw the target player's top and bottom circles
@@ -930,10 +930,10 @@ impl ApplicationHandler for App {
                 device_id, state, ..
             } => {
                 // Any button press shoots (SDL's MouseButtonDown)
-                if state == ElementState::Pressed && self.whose_mouse(device_id).is_none() {
-                    self.claim_mouse(device_id);
-                }
                 if state == ElementState::Pressed {
+                    if self.whose_mouse(device_id).is_none() {
+                        self.claim_mouse(device_id);
+                    }
                     if let Some(index) = self.whose_mouse(device_id) {
                         shoot(index, &mut self.players, self.player_count);
                     }
@@ -1172,7 +1172,7 @@ impl App {
         // One draw call per split-screen region; the scissor replaces SDL's clip rect
         for region in &regions {
             builder
-                .set_scissor(0, [region.scissor.clone()].into_iter().collect())
+                .set_scissor(0, [region.scissor].into_iter().collect())
                 .unwrap();
             unsafe { builder.draw(region.vertex_count, 1, region.first_vertex, 0) }.unwrap();
         }

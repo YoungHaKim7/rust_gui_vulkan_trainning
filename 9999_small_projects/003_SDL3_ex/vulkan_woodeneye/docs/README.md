@@ -23,6 +23,21 @@ I also ran `cargo fmt`, which touched a few pre-existing formatting nits (commen
 
 <hr />
 
+All 6 clippy errors are fixed, and `cargo clippy --all-features --all-targets -- -D warnings` and `cargo fmt --check` both pass cleanly.
+
+What changed in `src/main.rs`:
+
+1. **`needless_range_loop` × 3** — `shoot` (line 133), `init_players` (line 250), and the "draw other players" loop in `build_scene` (line 564) now iterate with `.iter_mut().enumerate().take(len)` / `.iter().enumerate().take(len)` instead of indexing `players[i]`. Behavior is identical, including the `i == shooter` / `i == j` skips (the index is still needed for those comparisons and the spawn-position bit math).
+
+2. **`too_many_arguments`** — `project_clipped_segment` now takes the two endpoints as `a: [f32; 3]` / `b: [f32; 3]` (4 params instead of 8). The call site in `build_scene` builds the transformed endpoints as `let a = [...]` / `let b = [...]` arrays, with identical math and f32 precision.
+
+3. **`collapsible_if`** — the `MouseInput` handler now nests both branches under a single `if state == ElementState::Pressed`, which also deduplicates the repeated state check. Semantics unchanged: on first press the device is still claimed and then immediately shoots, exactly as before.
+
+4. **`clone_on_copy`** — `region.scissor.clone()` → `region.scissor` (`Scissor` is `Copy`).
+
+
+<hr />
+
 # 코드 분할
 
 Done. The single 1,242-line `main.rs` is now split into 6 files by function, building cleanly with no new warnings. The game logic was moved verbatim — only visibility (`pub(crate)`) and imports changed.
