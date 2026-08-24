@@ -1,8 +1,8 @@
 - https://github.com/vulkano-rs/vulkano
 
 # 내가 만든거 Vulkan 이 백엔드
-- slang파일을 보기 위한 뷰어(시각화함)
+- slang파일을 보기 위한 뷰어(시각화함)(slang파일만 가능)
   - https://github.com/YoungHaKim7/slang_files_viewer_shaders
 
-- `vert` & `frag` shader file로 뷰어(시각화함)
+- `vert` & `frag` shader file로 뷰어(시각화함)(slang, spv, / `frag` & `vert` 다 가능) 최종 완성본 260824
   - https://github.com/YoungHaKim7/vert_frag_viewer
