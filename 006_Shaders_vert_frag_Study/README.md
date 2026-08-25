@@ -1,3 +1,6 @@
+# vert, frag보려고 내가 만든 뷰어
+- https://github.com/YoungHaKim7/vert_frag_viewer
+
 # OpenGL에서 쓰는 `vert` & `frag`
 - https://learnopengl.com/Getting-started/Shaders
 
