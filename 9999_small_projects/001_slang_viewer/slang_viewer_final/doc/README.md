@@ -1,3 +1,46 @@
+# 시작점에 뭔가 오류가난듯
+
+● No — a black screen here means nothing was rasterized. The app runs, the pipeline
+  builds, and the draw call executes, but your triangle collapses to zero size.
+
+  Why: the viewer draws 3 vertices with no vertex buffer and no vertex attributes — by
+  design, the shader is supposed to place the triangle using the vertex index
+  (`SV_VertexID` / `gl_VertexID`). See `src/vulkan/pipeline/graphics.rs:122` (empty vertex
+  input state) and the comment at `graphics.rs:265`, plus the README: "The viewer draws 3
+  vertices; the shader positions them with SV_VertexID."
+
+  Your `test.vert` is the classic LearnOpenGL shader — it reads positions from a vertex
+  attribute:
+
+```vert
+  layout (location = 0) in vec3 aPos;   // never supplied by the viewer
+```
+  Since no attribute is bound, aPos is undefined (effectively all zeros), so all 3
+  "vertices" land on the same point → degenerate triangle → no fragments → you only see
+  the clear color (0.05, 0.05, 0.05) from graphics.rs:238, which reads as black.
+
+  Fix test.vert to generate positions from the vertex index:
+
+```vert
+  #version 330 core
+  out vec4 vertexColor;
+
+  void main()
+  {
+      vec2 positions[3] = vec2[](
+          vec2(-0.5, -0.5),
+          vec2( 0.5, -0.5),
+          vec2( 0.0,  0.5)
+      );
+      gl_Position = vec4(positions[gl_VertexID], 0.0, 1.0);
+      vertexColor = vec4(0.5, 0.0, 0.0, 1.0);
+  }
+```
+  You should then see the dark-red triangle. (It will be dark — (0.5, 0, 0) on
+  near-black — so don't be surprised if it's subtle.)
+
+  Want me to apply that to assets/test.vert?
+
 # FIX
 Fixed. The app now launches and runs its render loop (it was killed only by my 8s timeout, exit 143 — no compile error, no crash).
 
