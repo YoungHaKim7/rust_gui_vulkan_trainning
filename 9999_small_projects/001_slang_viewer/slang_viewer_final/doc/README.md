@@ -1,3 +1,30 @@
+# size늘리고 작게 가능
+
+Build passes cleanly. Here's what changed to make the window freely resizable:
+
+## How it works
+
+The hard part isn't allowing the resize — it's that a Vulkan swapchain is created at a fixed size, so every extent-sized object must be rebuilt when the window changes. Three things were needed:
+
+**1. Let the window resize** — `src/app.rs:224` now sets `.with_resizable(true)`.
+
+**2. React to size changes** — `src/app.rs` handles `WindowEvent::Resized` by setting a `resize_pending` flag, which is consumed at the next `RedrawRequested`. The flag coalesces the flood of `Resized` events a drag produces into one swapchain rebuild per frame. Zero-sized events (minimized) are ignored.
+
+**3. Rebuild the extent-dependent objects** — new `VulkanApp::recreate()` (`src/vulkan/mod.rs:100`). After `device_wait_idle()`, it destroys and recreates, in dependency order:
+- the swapchain (images + views) — extent-sized
+- the pipeline — the graphics path's viewport/scissor are baked in at creation, and its framebuffers reference the image views; the compute path's offscreen image and dispatch group counts are extent-derived
+- the sync objects — one render-finished semaphore per swapchain image, and the image count can change
+
+The device, surface, and command pool survive — they don't depend on the extent.
+
+**Two supporting fixes:**
+- `src/vulkan/swapchain.rs:47` — the extent fallback when the window system doesn't fix one (`current_extent == u32::MAX`, typical on Wayland) now uses the window's *live* inner size instead of the old `WIDTH`/`HEIGHT` constants, clamped to the surface's min/max. Without this, a Wayland resize would silently keep rendering at the old size.
+- `draw()` (`src/vulkan/mod.rs:139`) now handles `ERROR_OUT_OF_DATE_KHR` and `SUBOPTIMAL_KHR` from `acquire_next_image` and `queue_present` by recreating inline — the driver can invalidate the swapchain at any moment (fullscreen toggle, compositor changes), not just on `Resized` events.
+
+Shadertoy `iResolution` tracks the new size automatically since it's read from the swapchain extent each frame.
+
+Docs updated to match (`README.md:91`, `lib.rs` extent bullet and the "swapchain recreation" learning-note). You can test with `cargo run -- <shader>` — grab an edge and drag; also try minimizing/restoring.
+
 # GLSL추가
 
 Done. `cargo r --release ./assets/glsl_lang/circle.glsl` now opens the viewer and renders the animated pulsing circle — verified with two screenshots ~1 s apart showing different radii, so `iTime` is genuinely animating.
