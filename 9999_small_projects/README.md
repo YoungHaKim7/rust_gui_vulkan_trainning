@@ -7,5 +7,5 @@
 - `vert` & `frag` shader file로 뷰어(시각화함)(slang, spv, / `frag` & `vert` 다 가능) 최종 완성본 260824
   - https://github.com/YoungHaKim7/vert_frag_viewer
 
-- sdl3로 만든거 vulkan으로 변경
+- sdl3로 만든거 vulkan으로 변경(3d game기초)
   - https://github.com/YoungHaKim7/vulkan_woodeneye
