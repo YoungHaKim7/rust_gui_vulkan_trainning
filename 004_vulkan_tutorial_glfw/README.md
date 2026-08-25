@@ -1,3 +1,5 @@
+# cpp는 glfw가 유명하고 Rust의 첫시작은 vulkano
+
 # vulkan Tutorial
 - https://github.com/Overv/VulkanTutorial
 
