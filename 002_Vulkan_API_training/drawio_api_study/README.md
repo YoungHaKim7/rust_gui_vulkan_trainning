@@ -3,8 +3,7 @@
 
 - https://gpuopen.com/news/v-ez-brings-easy-mode-vulkan/
 
-
-<img src="./vulkan_api.svg" />
+<img width="2043" height="911" alt="Image" src="https://github.com/user-attachments/assets/b435e3c5-2319-4a1a-ba7b-bec06e56388a" />
 
 
 # vulkan의 핵심 개념
