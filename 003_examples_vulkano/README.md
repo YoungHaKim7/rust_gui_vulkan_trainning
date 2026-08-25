@@ -1,3 +1,5 @@
+# c++은 glfw가 유명하고 Rust의 첫시작은 vulkano
+
 # Vulkan개념잡기(잘 정리됨)
 - https://namu.wiki/w/Vulkan(API)
   - 내가 만든 프로그램 문서로 설명 하기 좋다.
