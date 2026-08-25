@@ -1,3 +1,27 @@
+# FIX
+Fixed. The app now launches and runs its render loop (it was killed only by my 8s timeout, exit 143 — no compile error, no crash).
+
+## What was wrong
+
+Slang's GLSL front-end has no standalone `sampler` or `texture2D` types (it only knows the *combined* `sampler2D`), so `uniform sampler s;` failed with `undefined identifier 'sampler'`. No slangc flag changes that.
+
+## The fix — `assets/ui_fs.frag:3`
+
+Switched to Slang's separate-sampler types, which keep your exact binding layout and semantics (set 0: binding 0 = sampler, binding 1 = texture):
+
+```glsl
+layout(set = 0, binding = 0) uniform SamplerState s;
+layout(set = 0, binding = 1) uniform Texture2D tex;
+...
+float alpha = tex.Sample(s, v_uv).r;   // was texture(sampler2D(tex, s), v_uv)
+```
+
+Verified with the viewer's exact slangc flags — both stages compile, reflection shows `s` @ binding 0 and `tex` @ binding 1 as separate descriptors, just like the original GLSL intended. (`ui_vs.vert` needed no changes.) An alternative fix was a combined `sampler2D tex;` at one binding — valid GLSL too — but that would have merged your two bindings into one.
+
+## One caveat to be aware of
+
+The compile error is gone, but these shaders can't render their intended result in this viewer: the graphics pipeline in `src/vulkan/pipeline/graphics.rs:122-174` has an **empty pipeline layout** — no descriptor sets, no push-constant ranges, and no vertex buffer (it draws 3 vertices via `gl_VertexIndex`). So `pc.screen`, the `pos`/`uv`/`color` inputs, and the texture will read unbound/garbage data, and there are no validation layers enabled to flag it. If you want the viewer to actually preview UI-style shaders, that would mean adding descriptor-set + push-constant + vertex-input support to the graphics path — a bigger feature, happy to take it on if you want.
+
 # fix (final)
 
 - The user has committed the work themselves (`17b61ba` — "slang viewer complete, triangle blinking solved"), working tree clean, zero build warnings.
