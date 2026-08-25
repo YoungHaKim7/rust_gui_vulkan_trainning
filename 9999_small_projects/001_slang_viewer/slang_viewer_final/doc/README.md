@@ -1,3 +1,19 @@
+# front-end 수정
+
+Verified working. Here's the summary:
+
+**Fix applied to `assets/test.vert`** — one wrinkle beyond what I predicted: `slangc` rejected plain `gl_VertexID` in GLSL source (`undefined identifier 'gl_VertexID'`), even though it accepts `gl_Position`. What it does accept is Slang's spelling — an entry-point parameter with the semantic:
+
+```glsl
+void main(int vertexID: SV_VertexID)
+```
+
+**Verified in the real app** (not just compile): launched the viewer, grabbed the window region via X11 (`PIL.ImageGrab`, no screenshot tools installed), and had the frame analyzed — it confirms a **red triangle centered on the near-black background, nothing cut off**. It points *downward*, which is correct: Vulkan's NDC has +y pointing down, the opposite of OpenGL, so the `(0.0, 0.5)` apex lands at the bottom.
+
+The process has been stopped and the temp screenshots are in `/tmp`.
+
+One note for your other asset: `assets/ui_vs.vert` has the same problem — it reads `pos`/`uv`/`color` from vertex attributes the viewer never supplies, so it will also render nothing (plus a push-constant block the pipeline doesn't have). Same cure if you want it viewable: derive positions from `SV_VertexID`.
+
 # 시작점에 뭔가 오류가난듯
 
 ● No — a black screen here means nothing was rasterized. The app runs, the pipeline
