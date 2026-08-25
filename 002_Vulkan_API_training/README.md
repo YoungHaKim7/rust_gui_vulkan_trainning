@@ -17,3 +17,25 @@
 # (Unity 지만 잘 정리됨)버텍스 및 프래그먼트 셰이더 예제(Vertex and fragment shader examples)
 https://docs.unity3d.com/kr/2017.1/Manual/SL-VertexFragmentShaderExamples.html
 
+
+# Figure 1 - Vulkan API
+- https://gpuopen.com/news/v-ez-brings-easy-mode-vulkan/
+
+
+# Figure 2- V-EZ middleware layer
+- https://gpuopen.com/news/v-ez-brings-easy-mode-vulkan/
+  
+
+# Vulkan is a layered architecture, made up of the following elements:
+- https://vulkan.lunarg.com/doc/view/1.3.280.0/windows/LoaderInterfaceArchitecture.html
+- The Vulkan Application
+- The Vulkan Loader
+- Vulkan Layers
+- Drivers
+- VkConfig
+
+
+# Graphics pipeline basics
+- https://vulkan.lunarg.com/doc/view/1.4.321.0/mac/antora/tutorial/latest/03_Drawing_a_triangle/02_Graphics_pipeline_basics/00_Introduction.html
+
+<img width="403" height="643" alt="Image" src="https://github.com/user-attachments/assets/106becb5-d168-4f5d-8280-f3eb95ba0ed8" />
