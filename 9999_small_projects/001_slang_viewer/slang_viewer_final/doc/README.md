@@ -1,3 +1,26 @@
+# GLSL추가
+
+Done. `cargo r --release ./assets/glsl_lang/circle.glsl` now opens the viewer and renders the animated pulsing circle — verified with two screenshots ~1 s apart showing different radii, so `iTime` is genuinely animating.
+
+## How it works
+
+**Detection** (`src/shader.rs:697`) — any text module defining `mainImage(` (and without `[shader(` attributes) is treated as a Shadertoy export. Covers `.glsl` files, any extension, and stdin.
+
+**Wrapping** (`src/shader.rs:831`) — the export is wrapped, then compiled through the same per-stage slangc invocation a `.frag` pair member uses:
+- `#version 450` injected only when the export has none (its own `#version` stays first)
+- the built-ins (`iResolution`, `iTime`, `iMouse`, `iDate`, `iTimeDelta`, `iFrameRate`, `iFrame`) declared in a `layout(push_constant)` block — slangc's GLSL front-end accepts it
+- `#line 1 "<original>"` so compile errors cite the user's real filename and line numbers (e.g. `broken.glsl:3:22`)
+- an epilogue `main()` calling `mainImage` with y-flipped `gl_FragCoord` (Vulkan counts from top-left, Shadertoy from bottom-left)
+- a viewer-owned GLSL vertex stage generating the fullscreen triangle from `SV_VertexID`
+
+**Uniform feeding** — the viewer's first uniform mechanism, push constants (no descriptors/buffers needed): a 60-byte fragment-stage range in the pipeline layout (`graphics.rs:174`) and one `vkCmdPushConstants` per frame (`graphics.rs:305`). `shader::ShadertoyUniforms` is the `#[repr(C)]` mirror of the GLSL block, with a compile-time size assert pinning the std140 layout. Values come from a frame clock in `app.rs` (`Instant`-based `iTime`/`iTimeDelta`/`iFrameRate`, frame counter) plus winit mouse tracking and the swapchain extent for `iResolution`.
+
+**Guard rails** — exports using `iChannel*` textures or declaring their own `uniform`s are rejected up front with dedicated messages, since nothing could supply them at draw time.
+
+All existing paths (`.slang` module, `.vert`+`.frag` pair, compute, stdin) still run unchanged; `cargo fmt` and `clippy` are clean. README and the lib.rs walkthrough (§2, §7 Shadertoy subsection, §20) document the new path. Files touched: `src/shader.rs`, `src/app.rs`, `src/vulkan/{mod,frame}.rs`, `src/vulkan/pipeline/{mod,graphics}.rs`, `README.md`, `src/lib.rs`.
+
+One scope note: `iChannel0..3` texture inputs are intentionally unsupported for now — that would need image loading plus combined-image-sampler descriptors, a natural follow-up if you want it.
+
 # front-end 수정
 
 Verified working. Here's the summary:
