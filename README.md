@@ -3,6 +3,12 @@
 
 <hr />
 
+<p align="center">
+  <img width=50px src="https://user-images.githubusercontent.com/67513038/213436632-820a1675-98d9-4626-979d-be63c60cdcb7.png" />
+  <img width=35px src="https://user-images.githubusercontent.com/67513038/213403213-1b1b3efc-ce53-4825-9dfc-e9bf2956a7f4.svg" />
+  <img width=70px src="https://github.com/YoungHaKim7/Cpp_Training/assets/67513038/1599aaad-3821-4abe-b40b-f7000f5ab0b7" />
+</p>
+
 <!-- Rust version -->
 <a href="https://www.rust-lang.org/" rel="nofollow noopener noreferrer">
   <img src="https://img.shields.io/badge/Rust-1.98+-orange.svg" alt="Rust">
