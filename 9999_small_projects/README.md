@@ -8,6 +8,9 @@
 - `vert` & `frag` shader file로 뷰어(시각화함)(slang, spv, / `frag` & `vert` 다 가능) 최종 완성본 260824
   - https://github.com/YoungHaKim7/vert_frag_viewer
 
+- `glTF`파일 뷰어(`glb`파일) - Blender에서 glTF파일로 Export가능
+  - https://github.com/YoungHaKim7/gltf_viewer_vulkan
+
 ## vulkan으로 GUI만들기 시리즈
 - full Vulkan renderer + immediate-mode GUI + ToDo logic(성능은 구림. 교육용)
   - https://github.com/YoungHaKim7/todo_app_vulkan
