@@ -11,6 +11,13 @@
 - `glTF`파일 뷰어(`glb`파일) - Blender에서 glTF파일로 Export가능
   - https://github.com/YoungHaKim7/gltf_viewer_vulkan
 
+## vulkan으로 과학 시뮬레이션 만들기 시리즈
+- 나비에-스토크스 방정식(Navier-Stokes equations, NS equation)(유체역학)
+  - https://github.com/YoungHaKim7/Navier-Stokes_equations_Vulkan/
+- 태양계 시스템
+  - https://github.com/YoungHaKim7/solar_system_simulation_vulkan_rust
+
+
 ## vulkan으로 GUI만들기 시리즈
 - full Vulkan renderer + immediate-mode GUI + ToDo logic(성능은 구림. 교육용)
   - https://github.com/YoungHaKim7/todo_app_vulkan
