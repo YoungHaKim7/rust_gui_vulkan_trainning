@@ -202,3 +202,29 @@ Here is Claude's plan:
           editing keys; Esc still quits
 
 # 복사하기 붙혀넣기 기능추가
+Done — the input box is now a full single-line editor. The app is running on your desktop; click into the input and try it.
+
+**What you can do now**
+
+| Action                                             | Result                                  |
+| -------------------------------------------------- | --------------------------------------- |
+| Click in the text                                  | Places the caret at any position        |
+| Press + drag                                       | Selects text (highlighted in blue)      |
+| Double-click / triple-click                        | Selects a word / everything             |
+| ←/→, Home/End (+Ctrl = by word, +Shift = extend)   | Moves the caret / selection             |
+| Ctrl+Backspace / Backspace / Delete (+Ctrl = word) | Deletes word-left / char-left / forward |
+| Ctrl+A / C / X / V                                 | Select all / copy / cut / paste         |
+| Typing over a selection                            | Replaces it                             |
+
+Long text now scrolls horizontally so the caret always stays visible, and clicks map correctly against the scrolled text. Paste is sanitized (newlines/tabs become spaces, still capped at 80 chars). Per your choice, Ctrl+Backspace deletes the previous word; Ctrl+A + Backspace or a triple-click clears everything.
+
+**How it's built**
+
+- `src/input.rs` (new) — `TextField`: text + caret + anchor + scroll offset, every editing op as boundary-safe methods (the charset's `·`/`−` are multi-byte). 11 unit tests.
+- `src/app.rs` — modifier tracking (`ModifiersChanged`), full keyboard commands, clipboard via `copypasta` (native Wayland through your window's display, X11 fallback, no-op stub) and press relay for drag selection.
+- `src/ui/screen.rs` — mouse interaction policy (press-to-focus, drag-select, double/triple-click) plus rendering: selection rect, caret at its byte position, horizontal scroll.
+- `src/todos.rs`, `ui/mod.rs`, `theme.rs`, `renderer.rs` — state plumbing, `Ui::click_in`, `COL_SELECTION`.
+
+**Verified**: 22/22 tests pass, and I rendered headless frames (`TODO_DUMP_FRAME` + new `TODO_INPUT`/`TODO_INPUT_SELECT` debug overrides) — visually confirmed the selection highlight and the scrolled caret-at-end state. I also fixed a bug I caught in review: click hit-testing originally ignored the scroll offset, so clicks in scrolled long text landed at the wrong caret position.
+
+One thing to know: dragging out of the field and releasing there unfocuses the input (standard click-away behavior). If you'd rather the field keep focus during an out-of-bounds drag-select, that's a small tweak — just say so.
