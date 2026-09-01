@@ -10,3 +10,10 @@
      ◻ Update UI text rendering and layout
      ◻ Verify: tests + visual frame dump
 ```
+
+- "This is a 4x nearest-neighbor zoomed crop of
+  text rendered in a GPU app. Look closely at the glyph edges. 
+  - Question 1: Do the letter edges show smooth multi-level anti-aliasing (grayscale intermediate pixels forming curved strokes), or hard binary edges with stair-stepping (pure on/off pixels, jagged diagonals like classic bitmap
+  fonts)?
+  - Question 2: What font does this appear to be (it should look like 'Hack' with slightly boxy curves)?
+  - Question 3: Does the letter 'o' or 'D' show smooth rounded curves? Be specific about whether intermediate gray pixels exist at edges.
