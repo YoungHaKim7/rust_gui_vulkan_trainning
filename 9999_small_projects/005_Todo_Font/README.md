@@ -200,3 +200,5 @@ Here is Claude's plan:
           sanitizes/truncates; long text scrolls to keep the caret visible
         - Enter adds the task and resets the field; settings modal open blocks all
           editing keys; Esc still quits
+
+# 복사하기 붙혀넣기 기능추가
