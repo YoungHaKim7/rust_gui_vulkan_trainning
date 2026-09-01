@@ -84,3 +84,119 @@ Done — the settings menu is in, with font resizing across the whole app. `carg
 - Headless renders (`TODO_DUMP_FRAME`, plus new dev hooks `TODO_SETTINGS_OPEN` / `TODO_FONT_LEVEL`) dumped and checked: default view, modal open, smallest/largest font, and modal at both extremes — gear renders as a gear (no tofu), all controls fit, nothing clipped or overlapping. The "28 px" shown at max size is the body-text size, which is what the stepper reports.
 
 Run it as usual with `cargo run` — the gear is top-left next to the title. Files touched: `font.rs`, `atlas.rs`, `settings.rs` (new), `ui/{mod,theme,widgets,screen}.rs`, `app.rs`, `renderer.rs`, `todos.rs`, `main.rs`. Nothing is committed yet; `git status` shows the changes plus the new `src/settings.rs` if you want to review before committing.
+
+Here is Claude's plan:
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+ Full text editing in the input box
+
+ Context
+
+ The input field is currently append-only: Todos.input is a plain String, Backspace
+ pops the last char (app.rs:80-84), typing always appends at the end, and the caret
+ is always drawn at the text's end (screen.rs:116-127). There is no way to position
+ the caret with the mouse, select text, delete words, or copy/paste.
+
+ The user wants a real single-line editor in the input box:
+
+ - Click to place the caret anywhere; drag with the mouse to select text
+ - Ctrl+Backspace deletes the word before the caret (user confirmed standard behavior
+   over "erase all"; erase-all = Ctrl+A + Backspace or triple-click + Backspace)
+ - Arrow keys / Home / End to move the caret (Ctrl+arrows = word-wise, Shift = extend
+   selection)
+ - Copy / cut / paste via Ctrl+C / Ctrl+X / Ctrl+V (clipboard)
+
+ Design
+
+ Introduce a TextField model — text: String, caret: usize (byte index, always on a
+ char boundary), anchor: usize (selection anchor; selection = min..max when caret !=
+ anchor), scroll_x: f32 (horizontal view offset so the caret stays visible in
+ overflowing text) — plus all editing operations as methods. Keyboard commands live
+ in app.rs (winit events), mouse interaction policy lives in screen.rs (immediate
+ mode, where layout is known); app.rs only relays raw mouse state.
+
+ Note: sanitize (todos.rs:5-13) allows the multi-byte chars · (U+00B7) and −
+ (U+2212), so all caret math must use char_indices()/char boundaries, never ±1 byte.
+
+ Mouse mechanics: clicks already fire on release via pending_clicks → Ui::take_click.
+ For drag-select, App additionally relays mouse_down: bool and the press origin
+ press: [f32;2] into Ui each frame. screen.rs: while ui.mouse_down &&
+ field.contains(ui.press), place/extend the selection (anchor fixed at press
+ position, caret follows ui.mouse.x clamped); press-in-field also focuses immediately
+ so the caret shows during the drag. Double/triple-click (within ~500 ms, ~6 px)
+ selects word / all, tracked via a last_field_click timestamp in Todos.
+
+ Clipboard (copypasta 0.10, already in the local cargo cache): create once when the
+ window exists. Prefer Wayland: window.wayland_display() → unsafe {
+ wayland_clipboard::create_clipboards_from_external(ptr).0 }; else
+ ClipboardContext::new(); on failure NopClipboard. Stored as Box<dyn
+ ClipboardProvider> in App; all get/set errors ignored (.ok()). Paste is filtered
+ through sanitize with \n/\t → space, truncated to the existing 80-char cap.
+
+ Changes
+
+ 1. Cargo.toml — add copypasta = "0.10".
+ 2. src/input.rs (new) — TextField struct + methods (all boundary-safe, unit-tested):
+    - new, clear (resets caret/anchor/scroll), selection() -> Option<Range<usize>>,
+      selected_text()
+    - insert_str(&str, max_chars) — replaces selection, inserts at caret, truncates
+      to cap
+    - backspace, backspace_word, delete, delete_word (word ops skip whitespace run
+      then the word run)
+    - move_left/right(word, select), move_to_start/end(select), select_all
+    - set_caret_from_x(x, text_x, Size) ->  and x_from_byte(byte, text_x, Size) —
+      walk chars with atlas::global().advance() (pattern: text_width in
+      ui/mod.rs:195-198)
+    - #[cfg(test)] tests for all of the above, incl. multi-byte boundaries and an
+      x↔caret roundtrip via atlas::global() (works in tests, cf. atlas.rs:187).
+ 3. src/main.rs — mod input; + one line in the module-map doc comment.
+ 4. src/todos.rs — input: TextField (replaces String), field_rect: Rect (offscreen
+    default; updated by screen.rs each frame), dragging: bool, last_field_click:
+    Option<(Instant, f32, f32)>. add_task calls self.input.clear(); sanitize
+    unchanged. Update the struct-literal in the roundtrip test.
+ 5. src/app.rs
+    - Track modifiers: WindowEvent::ModifiersChanged(m) => self.mods = m (winit 0.30
+      KeyEvent has no modifiers field — verified).
+    - Relay press state: on MouseInput Pressed set mouse_down, press = mouse, and
+      todos.focused |= todos.field_rect.contains(mouse); on Released keep the
+      existing pending_clicks push.
+    - handle_keyboard gains self.mods logic: Ctrl+A/X/C/V (intercepted before the
+      generic Key::Character arm so they never type letters); Backspace/Delete (+Ctrl
+      = word); Left/Right/Home/End (+Ctrl word, +Shift select); Space/Character
+      route through insert_str with sanitize (skip typing while Ctrl/Alt held); Enter
+      unchanged. Every edit/move resets todos.caret_since (blink, existing pattern).
+    - Clipboard init in resumed (wayland → x11 → nop, see Design); update the
+      Controls: println to mention the new keys.
+ 6. src/ui/mod.rs — Ui gains pub(crate) mouse_down: bool and pub(crate) press: [f32;
+    2] (filled by App before each frame alongside mouse/clicks).
+ 7. src/ui/theme.rs — pub(crate) const COL_SELECTION: [f32; 4] = [0.23, 0.52, 0.93,
+    0.35]; (accent at low alpha).
+ 8. src/ui/screen.rs
+    - Store todos.field_rect = field; press-in-field + drag-select and
+      double/triple-click logic per Design (all x→caret math via TextField methods
+      with tx, max_tx, Size::text(level) already at hand).
+          double/triple-click logic per Design (all x→caret math via TextField methods
+          with tx, max_tx, Size::text(level) already at hand).
+        - Rendering: update scroll_x so x(caret) stays within [tx, max_tx]; draw the
+          visible substring via the existing ui.text_clipped (ui/mod.rs:168) starting
+          at the first partially-visible char, pen shifted by -scroll_x remainder;
+          selection rect (COL_SELECTION) between clamped x(min(anchor,caret))..x(max);
+          caret rect at clamped x(caret) (replaces the current
+          fit_width-of-whole-string caret at screen.rs:117).
+
+     Verification
+
+     1. cargo build — copypasta 0.10.2 + x11-clipboard 0.9.3 + smithay-clipboard 0.7.3
+        are already in the local cargo cache; if the network blocks the index, retry
+        with --offline.
+     2. cargo test — new input.rs tests + existing suites (all pure-CPU; no GPU
+        needed).
+     3. cargo run manual smoke test:
+        - type; click mid-text and type/Backspace there; arrows/Home/End, Ctrl+arrows,
+          Shift+arrows
+        - drag selects; double-click selects a word; triple-click selects all;
+          selection highlighted, typing/Backspace replaces it
+        - Ctrl+Backspace deletes a word; Delete deletes forward
+        - Ctrl+C/X/V round-trip with another app; pasting >80 chars or newlines
+          sanitizes/truncates; long text scrolls to keep the caret visible
+        - Enter adds the task and resets the field; settings modal open blocks all
+          editing keys; Esc still quits
