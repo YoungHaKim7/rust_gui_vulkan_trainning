@@ -62,3 +62,25 @@ fontTools isn't available — let me check the font's coverage with fc-query ins
 - ● 에이전트 "Explore todo app UI 아키텍처" 완료 
 
 - ● 이번 탐구를 통해 계획이 맞았다는 걸 확인했고, 한 가지 개선점도 발견했습니다. U+F013(Font Awesome의 'cog' — 시각적으로는 ⚙ 아이콘)에 Nerd 폰트의 기어 글리프가 포함되어 있다는 점입니다. 비록 U+2699 자체는 매핑되어 있지 않지만요. 손으로 그린 기하학 대신 그 글리프를 크리스프 기어에 사용할 거고, '작은' 버튼에는 - (U+2212) 글리프를 함께 쓸 겁니다.
+
+Done — the settings menu is in, with font resizing across the whole app. `cargo build` is clean, all 10 tests pass, and I verified six rendered states visually via frame dumps.
+
+## What was added
+
+**Gear button (top-left)** — Sits left of the "ToDo" title. One note: I checked the font with `fc-query`, and **U+2699 is not covered** by Hack Nerd Font — it would render as nothing. The font does contain the Nerd Font gear at **U+F013** (the same ⚙ cog visually), so I added that codepoint to the atlas and use it. The button highlights on hover and opens the settings window.
+
+**Settings window** — A modal centered over a dimmed scrim (`src/ui/screen.rs`):
+- **Font size** row: `−` / `20 px` / `+` stepper, five steps (body text 16 → 28 px, title scales 26 → 44 px). Buttons disable at the limits.
+- `Close` button; clicking the scrim outside the panel also closes, as does `Esc` (first Esc closes the window, only a second one quits).
+- While open, the modal owns all input: clicks, typing, and scroll-wheel are withheld from the todo list behind it, and the input field is blurred.
+
+**Runtime font scaling** — `font::Size` changed from a 2-variant enum to a `(kind, level)` pair with 5 levels, all pre-rasterized into the atlas at startup (so no GPU texture rebuild is needed when you change the size — the level just selects a different atlas band). All layout constants (rows, checkboxes, paddings, footer) scale with the level via `LAYOUT_SCALE`; the default level keeps the exact 20/32 px sizes the app had before.
+
+**Persistence** — New `src/settings.rs`: the chosen size is saved to `settings.txt` (`font=N`) on every change and loaded at startup, clamped to the valid range.
+
+## Verification
+
+- `cargo test` — 10/10 (new tests: charset/index/level invariants, gear glyph has a bitmap at all sizes, settings roundtrip + clamping + garbage-file fallback).
+- Headless renders (`TODO_DUMP_FRAME`, plus new dev hooks `TODO_SETTINGS_OPEN` / `TODO_FONT_LEVEL`) dumped and checked: default view, modal open, smallest/largest font, and modal at both extremes — gear renders as a gear (no tofu), all controls fit, nothing clipped or overlapping. The "28 px" shown at max size is the body-text size, which is what the stepper reports.
+
+Run it as usual with `cargo run` — the gear is top-left next to the title. Files touched: `font.rs`, `atlas.rs`, `settings.rs` (new), `ui/{mod,theme,widgets,screen}.rs`, `app.rs`, `renderer.rs`, `todos.rs`, `main.rs`. Nothing is committed yet; `git status` shows the changes plus the new `src/settings.rs` if you want to review before committing.
