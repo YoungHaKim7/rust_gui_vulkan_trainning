@@ -4,6 +4,7 @@
 
 # Vulkan으로 도전할거 Science
 - https://github.com/jjahn504/mathwin
+  - https://m.blog.naver.com/PostList.naver?blogId=phy2sci&categoryName=RUST%20%EC%BD%94%EB%94%A9%EC%9C%BC%EB%A1%9C%20%EB%AC%BC%EB%A6%AC%ED%95%99%EC%9D%84..&categoryNo=15&logCode=0
 
 # 내가 만든거 Vulkan 이 백엔드
 
