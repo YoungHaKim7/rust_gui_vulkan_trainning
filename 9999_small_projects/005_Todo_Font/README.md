@@ -38,3 +38,12 @@ Done. The app now renders real anti-aliased Hack Nerd Font glyphs instead of a s
 One catch fixed along the way: ab_glyph's glyph space is y-down, so the ink-top metric is `-bounds.min.y` — the test suite now asserts this (`'M' ink must sit above the baseline`).
 
 Note: `assets/font/` is still untracked in git — commit it with the code, since the build embeds it at compile time.
+
+# 메뉴 추가하기 유니코드 이용함.
+```
+fontTools isn't available — let me check the font's coverage with fc-query instead.
+
+● Bash(fc-query -f '%{charset}\n' /home/gy/my_projects/Rust_Lang/9999/9191919/todo_app
+      _vulkan/assets/font/HackNerdFont-Regular.ttf | tr ' ' '\n' | awk -F- '{ if ($1
+      ==…
+```
