@@ -4,7 +4,9 @@
   Hack Nerd 폰트 TTF를 사용하면, UI에서 사용하는 정확한 픽셀 크기로 래스터화된 안티앨리어싱이 적용됩니다. 
 
 - Rasterizing TTF font… (8m 28s · ↓ 30.8k tokens)
+```bash
   ⎿  ◼ Add ab_glyph and rasterize TTF font
      ◻ Rebuild glyph atlas with per-glyph quads
      ◻ Update UI text rendering and layout
      ◻ Verify: tests + visual frame dump
+```
