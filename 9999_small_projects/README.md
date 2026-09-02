@@ -25,8 +25,13 @@
 
 
 ## vulkan으로 GUI만들기 시리즈
-- full Vulkan renderer + immediate-mode GUI + ToDo logic(성능은 구림. 교육용)
+
+- (도트스타일 저화질 버젼) Todo
+  - https://github.com/YoungHaKim7/todo_app_vulkan_8x8_bitmap_font
+
+- (ttf폰트를 로딩해서 고화질 버젼, 업무우선순위 부터 쓰려고 만든 작품, 완성도 높)full Vulkan renderer + immediate-mode GUI + ToDo logic(성능은 구림. 교육용)
   - https://github.com/YoungHaKim7/todo_app_vulkan
+
 
 ## vulkan으로 게임 만들기 시리즈
 - sdl3로 만든거 vulkan으로 변경(3d game기초)
