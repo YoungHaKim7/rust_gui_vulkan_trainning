@@ -3,7 +3,12 @@
 ```bash
 # target install
 rustup target add x86_64-pc-windows-gnu 2>&1 | tail -2
+
+  - Linux: cargo check --release ✓
+  - Windows: cargo check --release --target x86_64-pc-windows-gnu
 ```
+
+## 첫 오류
 
 ```bash
  cargo r --release
