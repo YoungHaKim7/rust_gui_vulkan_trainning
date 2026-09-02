@@ -275,3 +275,22 @@ Done — priority stripes are implemented, tested, and visually verified. Here's
 - **Headless frame dump** with a mixed-priority list rendered exactly as specified — red rows (`URGENT server down`, `fix prod bug`) on top, yellow (`deploy Friday`, plus a done+struck-through one) next, gray last, and a legacy old-format line loading as gray. Checkbox/strikethrough/scrollbar all intact.
 
 One design note: sorting is stable, so within the same priority, tasks keep their added order — and checked items stay in their priority group rather than sinking (let me know if you'd want done items pushed to the bottom too).
+
+# 수정 버튼 만들기
+
+Done — each row now has a pencil edit button in front of the X. Clicking it lifts the task into the top input field, where you edit it with all the existing field behavior (caret, selection, Ctrl-chords, Hangul IME), then commit with **Enter** or the **Save** button (the Add button relabels itself while editing). The task keeps its done-flag and priority and returns to its sorted spot. **Esc** cancels an in-progress edit (and only quits when nothing is being edited); clearing the field and pressing Enter also cancels.
+
+What changed:
+
+- `src/font.rs`, `src/atlas.rs` — added the Nerd Font pencil glyph (U+F040) to the atlas charset, alongside the existing gear glyph.
+- `src/ui/widgets.rs` — `edit_button`: quiet gray pencil that takes a blue accent wash on hover (the counterpart to delete's red).
+- `src/todos.rs` — `editing: Option<Todo>` state plus `begin_edit`/`cancel_edit`; `add_task` commits edits; `save()` includes the lifted task so a mid-edit save (e.g. toggling another checkbox) can't drop it from `todos.txt`.
+- `src/ui/screen.rs` — pencil button left of the X, row text clips short of it, focus routing so the field grabs focus on a pencil click.
+- `src/app.rs` — Esc unwinds an edit first; console controls line updated; added a `TODO_EDIT=<index>` seed for the existing headless frame-dump debug facility.
+
+Verified: `cargo test` 35/35 (4 new tests covering lift/commit/cancel/done-flag survival), and headless frame dumps confirm the pencil renders on every row and the edit state shows field text + caret + "Save" + the lifted row gone.
+
+Two things worth knowing:
+
+1. **Drive-by fix**: my new tests exposed a pre-existing race in `atlas::tests::dynamic_glyphs_rasterize_on_demand` — it asserted a global generation counter didn't move, but the sibling atlas test bumps it from another thread (~1-in-8 failures). It now checks the cache hit by identical glyph placement instead. 15 consecutive full-suite runs pass.
+2. **Pre-existing quirk, not from this change**: at your saved `font=4` and a ~940px window, the bottom-left hint line runs under the "Clear completed" button — the old hint truncated the same way. I kept the new hint at the exact same length. Say the word if you'd like the hint clipped or reflowed properly at large fonts.
