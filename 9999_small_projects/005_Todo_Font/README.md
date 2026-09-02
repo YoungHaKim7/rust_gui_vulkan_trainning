@@ -245,3 +245,33 @@ Done. The input field no longer scrolls text out the side — it now wraps. What
 - `src/app.rs` — ArrowUp/ArrowDown keys wired up.
 
 **Verified** — 28 unit tests pass (wrap breaks, boundary tie-breaks, Up/Down/Home/End, multibyte wrap), `cargo fmt` clean, and I dumped off-screen frames to check visually: two-line wrap, select-all covering both lines (this caught a real bug — the highlight collapsed to zero width at the wrap boundary, fixed with a line-aware `x_in_line` measurement), underlined Hangul preedit at the caret, big-font layout, and the single-line case unchanged. The two remaining clippy warnings (`app.rs:272`, `draw_settings_window` args) predate this change.
+
+# 우선 순위(빨, 노, 회) 상단으로 정렬
+Done — priority stripes are implemented, tested, and visually verified. Here's what changed:
+
+## How it works
+
+**Each row now has a colored stripe before its checkbox:**
+- 🔴 **Red** = emergency → sorted to the very top
+- 🟡 **Yellow** = next priority → after red
+- ⚪ **Gray** = general → below yellow (the default for new tasks)
+
+**Click the stripe to cycle a task's priority** gray → yellow → red → gray. The row jumps to its sorted position immediately (the thin stripe has a full row-height hit area, tinted on hover, so it's easy to click). This matches the app's existing mouse-driven list interaction (checkbox toggle, delete).
+
+## Changes
+
+| File                         | What                                                                                                                                                 |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/todos.rs`               | `Priority` enum (`Low`/`Mid`/`High`, default gray), `Todo.priority` field, `cycle_priority()`, stable `sort_by_priority()` applied on load/add/cycle |
+| `src/todos.rs` (persistence) | Save lines are now `done<TAB>priority<TAB>text` (0=gray, 1=yellow, 2=red). **Old 2-column files still load** — they read back as gray                |
+| `src/ui/theme.rs`            | `COL_PRIO_HIGH` (red), `COL_PRIO_MID` (yellow), `COL_PRIO_LOW` (gray)                                                                                |
+| `src/ui/widgets.rs`          | `priority_button` — stripe + wide invisible hit rect with hover tint                                                                                 |
+| `src/ui/screen.rs`           | Stripe drawn left of the checkbox (checkbox/text shifted right ~13px), `priority_color()` mapping, updated bottom hint                               |
+| `src/app.rs`                 | Startup controls banner mentions the stripe                                                                                                          |
+
+## Verification
+
+- **31/31 unit tests pass**, including new ones: old/new save-line parsing, red→yellow→gray stable sort, and click-cycling re-sorting + persisting
+- **Headless frame dump** with a mixed-priority list rendered exactly as specified — red rows (`URGENT server down`, `fix prod bug`) on top, yellow (`deploy Friday`, plus a done+struck-through one) next, gray last, and a legacy old-format line loading as gray. Checkbox/strikethrough/scrollbar all intact.
+
+One design note: sorting is stable, so within the same priority, tasks keep their added order — and checked items stay in their priority group rather than sinking (let me know if you'd want done items pushed to the bottom too).
