@@ -49,3 +49,48 @@ note: found an item that was configured out
 For more information about this error, try `rustc --explain E0433`.
 error: could not compile `todo_app_vulkan` (bin "todo_app_vulkan") due to 1 previous error
 ```
+
+### WindowsOS 오류 수정최종
+
+수정 완료 및 양쪽 플랫폼에서 검증했습니다.
+
+## 원인
+
+`copypasta::wayland_clipboard` 모듈은 copypasta 크레이트 내부에서 `#[cfg(unix)]`로 게이트되어 있어 Windows에서는 컴파일 자체가 안 됩니다. `make_clipboard`가 이 모듈을 무조건 참조해서 Windows 빌드가 깨졌습니다.
+
+## 수정 (`src/app.rs:229`)
+
+Wayland 분기를 `#[cfg(all(unix, not(target_os = "macos")))]` 블록으로 감쌌습니다 (copypasta 자체의 게이트와 동일하게 맞춤):
+
+```rust
+fn make_clipboard(window: &Window) -> Box<dyn ClipboardProvider> {
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        use raw_window_handle::{HasDisplayHandle, RawDisplayHandle};
+        if let Ok(handle) = window.display_handle()
+            && let RawDisplayHandle::Wayland(display) = handle.as_raw()
+        {
+            let clipboard = unsafe {
+                copypasta::wayland_clipboard::create_clipboards_from_external(
+                    display.display.as_ptr(),
+                )
+            }
+            .1;
+            return Box::new(clipboard);
+        }
+    }
+    let _ = window; // 분기가 컴파일 아웃된 플랫폼에서 unused 경고 방지
+    ClipboardContext::new()
+        .map(|ctx| Box::new(ctx) as Box<dyn ClipboardProvider>)
+        .unwrap_or_else(|_| Box::new(NopClipboardContext::new().unwrap()))
+}
+```
+
+Windows에서는 이 분기가 사라지고 `ClipboardContext`로 빠지는데, Windows에서 `ClipboardContext`는 copypasta의 Win32 클립보드 백엔드(`clipboard-win`)라서 기능도 동일하게 작동합니다.
+
+## 검증
+
+- Linux: `cargo check --release` ✓
+- Windows: `cargo check --release --target x86_64-pc-windows-gnu` ✓ (경고 없음, `clipboard-win` 백엔드 정상 컴파일)
+
+Windows 머신에서 `cargo r --release`를 다시 실행하면 됩니다.
