@@ -1,4 +1,4 @@
-```bash
+```rust
 ● Update(src/renderer.rs)
   ⎿  Added 2 lines
       725
