@@ -1,4 +1,6 @@
 ```bash
+ cargo r --release
+   Compiling todo_app_vulkan v0.1.0 (C:\Users\ytok1\OneDrive\Desktop\Finacial_working\todo_app_vulkan)
 error[E0433]: cannot find `wayland_clipboard` in `copypasta`
    --> src\app.rs:237:24
     |
@@ -16,8 +18,7 @@ note: found an item that was configured out
 
 For more information about this error, try `rustc --explain E0433`.
 error: could not compile `todo_app_vulkan` (bin "todo_app_vulkan") due to 1 previous error
-PS C:\Users\ytok1\OneDrive\Desktop\금융working\todo_app_vulkan> cargo r --release
-   Compiling todo_app_vulkan v0.1.0 (C:\Users\ytok1\OneDrive\Desktop\금융working\todo_app_vulkan)
+PS C:\Users\ytok1\OneDrive\Desktop\Finacial_working\todo_app_vulkan>
 error[E0433]: cannot find `wayland_clipboard` in `copypasta`
    --> src\app.rs:237:24
     |
