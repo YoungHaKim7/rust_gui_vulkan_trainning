@@ -104,3 +104,28 @@ Using device: NVIDIA GeForce RTX 3060 Ti (type: DiscreteGpu)
 0 task(s) loaded from C:\Users\ytok1\OneDrive\Desktop\Finacial_working\todo_app_vulkan\todos.txt
 no Korean fallback font found; Hangul will render blank
 ```
+
+### font다른거 깔아서 해결
+
+Done and verified. Here's the summary:
+
+## What changed
+
+**Root cause:** `fallback()` in `src/font.rs` only probed hardcoded Linux font paths, so Windows found nothing.
+
+**Fix — the font is now embedded in the binary:**
+- Instanced the 23 MB variable font down to a static Regular first: `fonttools varLib.instancer ... wght=400` → `assets/font/NotoSerifKR-Regular.ttf` (14 MB). This step mattered — ab_glyph can't apply `gvar` deltas, so the raw VF renders its thin default weight (at 16 px, Hangul strokes peaked at coverage 160–213, never solid). The Regular instance peaks at 255 from 20 px up.
+- `FALLBACK_TTF` is embedded via `include_bytes!` (same as the Hack font), replacing the system-path list. Works identically on Windows/Linux — no font install, no env var, no shipping `assets/` next to the exe.
+- `TODO_KOREAN_FONT` env override still works.
+- New test `bundled_fallback_font_covers_hangul` guards coverage + ink darkness (would catch re-embedding the thin VF).
+
+## Verification
+- `cargo test`: **37 passed**
+- `cargo check --release --target x86_64-pc-windows-gnu`: clean
+- Ran the app from a scratch dir seeded with 4 Hangul todos: startup prints `Korean fallback font: bundled Noto Serif KR`, and the screenshot shows all Hangul rendering legibly (the dim gray you may notice is the app's existing text color — it applies to Latin too).
+
+## Notes
+- Rebuild the Windows exe (`cargo build --release --target x86_64-pc-windows-gnu`) and Hangul will render there.
+- I installed `fonttools` via **pipx** (PEP 668 blocks system pip) — remove with `pipx uninstall fonttools` if unwanted.
+- The 23 MB VF is still in `assets/font/`; it's the re-instancing source (e.g. `wght=500` if you'd like bolder Hangul), but feel free to delete it to slim the repo — the exe doesn't need it.
+- Exe size grows ~+14 MB from the embedded font.
