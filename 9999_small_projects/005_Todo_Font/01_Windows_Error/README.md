@@ -1,3 +1,10 @@
+# Linux에서 WindowsOS테스트 하기
+
+```bash
+# target install
+rustup target add x86_64-pc-windows-gnu 2>&1 | tail -2
+```
+
 ```bash
  cargo r --release
    Compiling todo_app_vulkan v0.1.0 (C:\Users\ytok1\OneDrive\Desktop\Finacial_working\todo_app_vulkan)
