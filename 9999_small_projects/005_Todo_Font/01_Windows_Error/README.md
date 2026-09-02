@@ -94,3 +94,13 @@ Windows에서는 이 분기가 사라지고 `ClipboardContext`로 빠지는데, 
 - Windows: `cargo check --release --target x86_64-pc-windows-gnu` ✓ (경고 없음, `clipboard-win` 백엔드 정상 컴파일)
 
 Windows 머신에서 `cargo r --release`를 다시 실행하면 됩니다.
+
+# 윈도우에서 Font를 못찾는 오류
+
+```bash
+Vulkan ToDo
+Controls: type + Enter = add task · click/drag in the input = caret/selection · Ctrl+A/C/X/V · Ctrl+Backspace = delete word · click checkbox = toggle · click a row's color stripe = cycle priority (red on top, yellow next, gray last) · X = delete · pencil = edit its text (Enter/Add saves, Esc cancels) · scroll = move list · settings: gear (top left) · Esc: close window / quit
+Using device: NVIDIA GeForce RTX 3060 Ti (type: DiscreteGpu)
+0 task(s) loaded from C:\Users\ytok1\OneDrive\Desktop\Finacial_working\todo_app_vulkan\todos.txt
+no Korean fallback font found; Hangul will render blank
+```
