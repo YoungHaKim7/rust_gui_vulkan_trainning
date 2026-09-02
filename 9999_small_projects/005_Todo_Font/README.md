@@ -228,3 +228,20 @@ Long text now scrolls horizontally so the caret always stays visible, and clicks
 **Verified**: 22/22 tests pass, and I rendered headless frames (`TODO_DUMP_FRAME` + new `TODO_INPUT`/`TODO_INPUT_SELECT` debug overrides) — visually confirmed the selection highlight and the scrolled caret-at-end state. I also fixed a bug I caught in review: click hit-testing originally ignored the scroll offset, so clicks in scrolled long text landed at the wrong caret position.
 
 One thing to know: dragging out of the field and releasing there unfocuses the input (standard click-away behavior). If you'd rather the field keep focus during an out-of-bounds drag-select, that's a small tweak — just say so.
+
+# 2줄 나오게 업데이트
+Done. The input field no longer scrolls text out the side — it now wraps. What changed:
+
+**Behavior**
+- Long text wraps onto a second line instead of sliding horizontally; the field grows downward (the Add button and the task list move down with it). Past two lines the extra text just runs off screen, as you said is fine.
+- Wrapping breaks at spaces; an unbroken run longer than the line (a URL, long Hangul phrase) breaks at the character that overflows.
+- The IME composition (Hangul preedit) is spliced in at the caret when wrapping, so it wraps together with the text and stays underlined and visible.
+- Selection highlight spans both lines; clicking/dragging maps by (x, y) to the correct line and caret.
+- New keys: **↑/↓** move between wrapped lines keeping the column; **Home/End** now go to the start/end of the visual line (same as before when everything fits one line).
+
+**Code**
+- `src/input.rs` — new `Wrap` type (line starts, `line_of`/`x_at`/`caret_at` mapping); replaced `scroll_x`/`x_from_byte`/`caret_from_x`/`visible_start`; added `move_up`/`move_down`/`move_to_line_start`/`move_to_line_end`.
+- `src/ui/screen.rs` — the field block now computes the wrap per frame, sizes the field to `min(lines, 2)`, and draws selection/text/preedit/caret per line (`FIELD_MAX_LINES = 2`).
+- `src/app.rs` — ArrowUp/ArrowDown keys wired up.
+
+**Verified** — 28 unit tests pass (wrap breaks, boundary tie-breaks, Up/Down/Home/End, multibyte wrap), `cargo fmt` clean, and I dumped off-screen frames to check visually: two-line wrap, select-all covering both lines (this caught a real bug — the highlight collapsed to zero width at the wrap boundary, fixed with a line-aware `x_in_line` measurement), underlined Hangul preedit at the caret, big-font layout, and the single-line case unchanged. The two remaining clippy warnings (`app.rs:272`, `draw_settings_window` args) predate this change.
