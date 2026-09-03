@@ -9,6 +9,21 @@
   - github code 
     - https://github.com/TanTanDev/binary_greedy_mesher_demo
 
+# `cargo clippy`
+
+- All clean — clippy passes with `-D warnings`, tests pass, and `cargo fmt` is applied. 82 errors fixed across 17 files:
+
+**Auto-fixed by `cargo clippy --fix`** (21 mechanical changes): unnecessary same-type casts (`i32 as i32`, `usize as usize`), immediately-dereferenced references, `sort_by` → `sort_by_key`, no-op operations, explicit `.into_iter()` in `IntoIterator` args, redundant `&'static` on a const, manual assign-op, iterating a map's values, drain-into-new-collection.
+
+**Fixed manually:**
+
+- **57× `suspicious_doc_comments`** — `///!` → `///`. These were ordinary doc comments on items (fns, structs, fields) with a typo'd `!`. Clippy's suggested `//!` would actually fail to compile mid-function (E0753 — I verified), but every one of these precedes an item, so `///` is correct.
+- **`too_many_arguments`** (`renderer.rs:327`) — `record_scene` took 8 args. Grouped `color_attachment`/`depth_attachment`/`viewport` into a new `RenderTargets` struct, mirroring how vulkano's `RenderingInfo` groups attachments. Updated both call sites (`app.rs`, `debug.rs`).
+- **`vec_init_then_push`** (`chunks_refs.rs:93`) — `get_von_neumann` now returns `Some(vec![...])` built in one expression.
+- **`needless_update`** (`renderer.rs:545`) — dropped `..Default::default()` from `DepthState` where both fields were already specified.
+
+One behavioral note: the fixes are semantics-preserving — the only signature change (`record_scene`) is internal, and the one unit test still passes.
+
 # 카메라나 마우스 속도 조절
 
 Done — compiles clean.
