@@ -27,10 +27,10 @@
  | bevy_flycam                               | Custom fly camera (camera.rs): mouse-capture look, WASD + Space/Shift, speed 128, sensitivity <br /> 0.00015 (values from src/main.rs:69) |
  |  AsyncComputeTaskPool + Task + poll_once  | `std::thread::spawn` + `JoinHandle::is_finished()` polled each frame (identical spawn/poll/join <br /> semantics, no new dep)  |
  | bevy_screen_diagnostics (on-screen text)  | Window-title stats (pattern: solar set_title), updated ~2×/s                                      |
- | egui inspectors <br />(WorldInspector/AssetInspector)   │ Dropped (editor-only plugins, no meaningful analog)                                |
+ | egui inspectors <br />(WorldInspector/AssetInspector)   | Dropped (editor-only plugins, no meaningful analog)                                |
  | Sun DirectionalLight day/night cycle      | Same cycle math; result is a sun-direction + intensity vec pushed to the shader                   |
  | Green circle base mesh (radius 22)        | Same disc rendered as a static packed-vertex mesh through the chunk pipeline                      |
- | Wireframe via 2nd material <br />(src/rendering.rs)   │ 2nd pipeline: same shaders, PolygonMode::Line, device feature fill_mode_non_solid   |
+ | Wireframe via 2nd material <br />(src/rendering.rs)   | 2nd pipeline: same shaders, PolygonMode::Line, device feature fill_mode_non_solid   |
  | Mesh entities / despawn                   | `HashMap<IVec3, ChunkGpuMesh>` (vertex+index Subbuffers) in RenderContext                          |
 
 
