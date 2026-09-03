@@ -19,34 +19,25 @@
 
  - What gets ported / substituted
 
- ┌───────────────────────────────────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────┐
- │               Bevy concept                │                                            Vulkan port                                            │
- ├───────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────┤
- │ Bevy ECS plugins/systems                  │ Plain structs + functions called in a fixed order in App::redraw                                  │
- ├───────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────┤
- │ WGPU renderer + WGSL PBR material         │ vulkano dynamic-rendering pipeline + GLSL chunk.vert/frag (Lambert sun + ambient + AO — Bevy      │
+ 
+ |               Bevy concept                |                                            Vulkan port                                            |
+ |-|-|
+  │ Bevy ECS plugins/systems                  │ Plain structs + functions called in a fixed order in App::redraw                                  │
+  │ WGPU renderer + WGSL PBR material         │ vulkano dynamic-rendering pipeline + GLSL chunk.vert/frag (Lambert sun + ambient + AO — Bevy      │
  │                                           │ PBR/cascade shadows not ported)                                                                   │
- ├───────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────┤
  │ bevy_flycam                               │ Custom fly camera (camera.rs): mouse-capture look, WASD + Space/Shift, speed 128, sensitivity     │
  │                                           │ 0.00015 (values from src/main.rs:69)                                                              │
- ├───────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────┤
- │ AsyncComputeTaskPool + Task + poll_once   │ std::thread::spawn + JoinHandle::is_finished() polled each frame (identical spawn/poll/join       │
+  │ AsyncComputeTaskPool + Task + poll_once   │ std::thread::spawn + JoinHandle::is_finished() polled each frame (identical spawn/poll/join       │
  │                                           │ semantics, no new dep)                                                                            │
- ├───────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────┤
  │ bevy_screen_diagnostics (on-screen text)  │ Window-title stats (pattern: solar set_title), updated ~2×/s                                      │
- ├───────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────┤
  │ egui inspectors                           │ Dropped (editor-only plugins, no meaningful analog)                                               │
  │ (WorldInspector/AssetInspector)           │                                                                                                   │
- ├───────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────┤
  │ Sun DirectionalLight day/night cycle      │ Same cycle math; result is a sun-direction + intensity vec pushed to the shader                   │
- ├───────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────┤
  │ Green circle base mesh (radius 22)        │ Same disc rendered as a static packed-vertex mesh through the chunk pipeline                      │
- ├───────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────┤
  │ Wireframe via 2nd material                │ 2nd pipeline: same shaders, PolygonMode::Line, device feature fill_mode_non_solid                 │
  │ (src/rendering.rs)                        │                                                                                                   │
- ├───────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────┤
  │ Mesh entities / despawn                   │ HashMap<IVec3, ChunkGpuMesh> (vertex+index Subbuffers) in RenderContext                           │
- └───────────────────────────────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────┘
+
 
  - Kept 1:1 (engine-agnostic, just swap bevy::math → glam, bevy::utils::HashMap → std): voxel.rs, constants.rs, utils.rs, lod.rs, face_direction.rs, quad.rs, chunk.rs (terrain gen, same bracket-noise params), chunk_mesh.rs, chunks_refs.rs, ulled_mesher.rs, greedy_mesher_optimized.rs, scanner.rs, voxel_engine.rs (queues + modifications), sun.rs.
 
