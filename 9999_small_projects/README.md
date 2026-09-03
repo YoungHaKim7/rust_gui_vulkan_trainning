@@ -37,7 +37,7 @@
 - sdl3로 만든거 vulkan으로 변경(3d game기초)
   - https://github.com/YoungHaKim7/vulkan_woodeneye
 
-- Bevy Game Engine으로 만든거 Vulkan으로 변경(Voxel 기)
+- Bevy Game Engine으로 만든거 Vulkan으로 변경(Voxel 기초로 화면 구성하기)
   - https://github.com/YoungHaKim7/vulkan_voxel_engine
 
 <br />
