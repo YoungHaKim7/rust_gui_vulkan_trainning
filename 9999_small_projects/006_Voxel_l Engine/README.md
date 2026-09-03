@@ -3,6 +3,22 @@
   - github code 
     - https://github.com/TanTanDev/binary_greedy_mesher_demo
 
+# 카메라나 마우스 속도 조절
+
+Done — compiles clean.
+
+**What changed:** `SENSITIVITY` in `src/camera.rs:9` went from `0.00015` to `0.00045` (3×). This one constant drives both left/right rotation (yaw) and up/down (pitch) in `FlyCamera::look`, so the whole look speeds up proportionally. It's also why it felt slow: on Wayland, winit delivers raw *unaccelerated* pointer motion, so the bevy default sensitivity lands much slower than it did in the original demo.
+
+**And yes — you can absolutely tweak these yourself.** It's your local repo; edit the file and re-run `cargo run --release` (cargo rebuilds automatically). The knobs, all in `src/camera.rs`:
+
+| Constant      | Controls                      | Line               |
+| ------------- | ----------------------------- | ------------------ |
+| `SENSITIVITY` | mouse look speed, both axes   | `src/camera.rs:9`  |
+| `SPEED`       | WASD/Space/Shift flight speed | `src/camera.rs:10` |
+| `MAX_PITCH`   | how far up/down you can look  | `src/camera.rs:11` |
+
+If you ever want left/right and up/down at *different* speeds, edit `look()` (`src/camera.rs:34-35`) instead — the `yaw` line is horizontal, the `pitch` line is vertical; just use different multipliers there.
+
 # 마우스로 좌우 볼수 있게 기능 추가
 
 - Done. The app still boots and renders (899 chunks meshed, frame dumped), so no startup regression.
