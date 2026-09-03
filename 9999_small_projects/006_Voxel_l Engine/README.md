@@ -3,6 +3,20 @@
   - github code 
     - https://github.com/TanTanDev/binary_greedy_mesher_demo
 
+# 마우스로 좌우 볼수 있게 기능 추가
+
+- Done. The app still boots and renders (899 chunks meshed, frame dumped), so no startup regression.
+
+## What was wrong
+
+Mouse look was already wired up (`FlyCamera::look` applies yaw/pitch), but it was fed from `WindowEvent::CursorMoved` deltas (`src/app.rs`). On your Wayland session, clicking captures the mouse with `CursorGrabMode::Locked` — and a locked pointer stops producing `CursorMoved` events entirely. The compositor only reports *relative* motion, which winit delivers as `DeviceEvent::MouseMotion` (winit's Wayland backend maps `zwp_relative_pointer` straight to that event). Since the app never listened for it, moving the mouse did nothing once captured — and in the `Confined` fallback, absolute-position deltas also died as soon as the cursor hit a window edge.
+
+## The fix (`src/app.rs`)
+
+- Added a `device_event` handler on the `ApplicationHandler` impl that feeds relative `MouseMotion` deltas into `self.camera.look()` while the mouse is captured — this is the canonical winit pattern for FPS-style look and works on Wayland, X11, Windows, and macOS (`src/app.rs:189`)
+- Removed the now-dead `CursorMoved` delta logic and the `last_cursor` field (also avoids double-counting motion on backends where both events fire)
+
+`camera.look` (`src/camera.rs:31`) already had the right signs: mouse right → `dx > 0` → yaw decreases → view turns right; vertical motion still tilts pitch, clamped just under ±90°. Run `cargo run --release`, click to capture, and moving the mouse left/right rotates the view; `Esc` releases it.
 
 # The conversion is complete and verified. Here's a summary:
 
