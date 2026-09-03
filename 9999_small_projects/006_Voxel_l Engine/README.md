@@ -4,6 +4,35 @@
     - https://github.com/TanTanDev/binary_greedy_mesher_demo
 
 
+# The conversion is complete and verified. Here's a summary:
+
+## `vulkan_voxel_engine/` — Bevy demo ported to Vulkan (vulkano)
+
+**Verified working**: builds clean (debug + release), ported unit test passes, and I ran it on your RTX 3060 Ti — the world streams in (**899 chunks meshed, 2.7M greedy-meshed vertices in ~8.5 s**), renders correctly (voxel hills, grass/dirt layers, sky, the green base disc), and survives sustained interactive runs.
+
+### What was ported (1:1 where possible)
+- **Core engine** — `chunk.rs` (same bracket-noise terrain, seed 1337 → identical world), `chunks_refs.rs`, both meshers (`greedy_mesher_optimized.rs`, `culled_mesher.rs` with AO), `scanner.rs` (12-chunk streaming), packed-u32 vertex format, `sun.rs` day/night cycle (60 s day / 1 s night, 450 ms ticks, hold-`I` ×6).
+- **Vulkan layer** follows the reference projects: `gpu.rs`, `renderer.rs` (RenderContext with **depth buffer**, fill + wireframe pipelines, per-chunk vertex/index buffers), GLSL `assets/chunk.vert|frag` decoding the packed vertex exactly like the original WGSL, `app.rs` (winit `ApplicationHandler`), `debug.rs` (offscreen PPM dump, solar-app pattern).
+
+### Substitutions for Bevy concepts
+| Bevy                         | Vulkan port                                                          |
+| ---------------------------- | -------------------------------------------------------------------- |
+| ECS plugins/systems          | fixed update order in `App::redraw`                                  |
+| `AsyncComputeTaskPool` tasks | `std::thread` + `is_finished()` polling (same cadence)               |
+| PBR + cascade shadows        | Lambert sun + sky ambient + vertex AO (shadowed faces stay readable) |
+| `bevy_flycam`                | custom fly camera — click to capture mouse, WASD/Space/Shift         |
+| on-screen diagnostics        | window title (fps, verts, chunks, queues, mesher, wireframe)         |
+| wireframe material           | 2nd pipeline, `PolygonMode::Line` + `fill_mode_non_solid`            |
+
+### Run it
+```sh
+cd vulkan_voxel_engine && cargo run --release
+```
+Controls: **click** = mouse capture · **WASD** = fly · **R** = swap greedy↔culled mesher · **T** = wireframe · **N** = carve blocks ahead · **I** = fast sun · **Esc** = quit. Headless check: `VOXEL_DUMP_FRAME=/tmp/f.ppm cargo run --release`.
+
+One deliberate deviation: the sun starts mid-morning instead of dawn so the world is lit immediately (the original starts dark and brightens over ~a minute). Not ported: egui inspectors and shadow maps (editor-only plugin / no raw-Vulkan equivalent) — noted in the subproject's README.
+
+
 # Convert Bevy voxel demo → Vulkan (vulkano) engine in vulkan_voxel_engine/
 
 
