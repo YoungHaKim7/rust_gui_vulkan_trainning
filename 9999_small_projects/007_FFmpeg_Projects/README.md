@@ -3,6 +3,13 @@
 
 <hr />
 
+# day2
+
+The identity-size conversion path changed semantics (bicubic + CENTER-siting chroma interpolation vs Phase 1's nearest/LEFT). A diff of 238 is too big for siting though — let me look at actual pixels:
+
+
+<hr />
+
 Phase 1 is complete. Here's the summary:
 
 ## What was built — ffmpeg_rs Phase 1 (CPU foundation)
