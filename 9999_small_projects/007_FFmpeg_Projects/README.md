@@ -3,6 +3,19 @@
 
 <hr />
 
+```bash
+```
+✅ Phase 1 — CPU pipeline (this)
+Phase 2 — Vulkan swscale: headless compute (vulkano), port of vf_scale_vulkan.c + libswscale/vulkan/, bilinear/bicubic, -s
+Phase 3 — filtergraph (libavfilter: buffersrc/sink, scale/format)
+Phase 4 — swresample + audio paths
+Phase 5 — NUT container, more filters
+Stretch — winit player window on the Vulkan pipeline
+```
+```
+
+<hr />
+
 # day2
 
 The identity-size conversion path changed semantics (bicubic + CENTER-siting chroma interpolation vs Phase 1's nearest/LEFT). A diff of 238 is too big for siting though — let me look at actual pixels:
