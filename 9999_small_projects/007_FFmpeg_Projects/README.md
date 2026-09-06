@@ -14,6 +14,27 @@ Stretch — winit player window on the Vulkan pipeline
 
 <hr />
 
+# day3
+
+Phase 3b — this session's progress
+
+The filtergraph is LIVE end-to-end:
+- parser.rs (1640 lines, graphparser.c port) cherry-picked from its surviving worktree and wired: parse_ptr + the real ff_filter_opt_parse (replacing the naive splitter)
+- -vf null is byte-identical to system ffmpeg through the full pipeline — demux → decode → buffersrc → parser-built graph → negotiation → buffersink → encode → mux
+- Golden tests added and passing: -vf null and null,null,format=pix_fmts=yuv420p chains, byte-exact (10 golden total now)
+- CLI edge cases verified: [in]null[out] labeled graphs work; nosuchfilter / null=x=5 / multi-chain shaped errors
+- 207 lib + 3 integration + 10 golden tests green                           
+In flight: the vf_scale implementer (workflow wf_6b12ae90-bfc, spec staged, worktree at current HEAD)delegates all pixel work to the existing ScaleContext and gates unported color-matrix conversions with honest Unsupported errors
+
+Queued after it lands: reflip (yuv420p→gray8 becomes a success path through the auto-inserted converter), -vf scale= golden tests with the established tole adversarial verifyworkflow (buffersrc, buffersink, driver, parser, vf_scale — vf_format already reviewed clean) and any f
+
+The pattern from the usagdled: specs are recoveredto disk, implementers commit in their worktrees, and each landed module gets integrated + verified befup the moment the workflownotifies.
+
+✻ Sautéed for 3m 36s · done 4:33 AM
+
+
+<hr />
+
 # day2
 
 The identity-size conversion path changed semantics (bicubic + CENTER-siting chroma interpolation vs Phase 1's nearest/LEFT). A diff of 238 is too big for siting though — let me look at actual pixels:
