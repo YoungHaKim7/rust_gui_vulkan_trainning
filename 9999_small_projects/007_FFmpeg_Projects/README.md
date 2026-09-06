@@ -32,6 +32,9 @@ The pattern from the usage-limit casualties is now handled: specs are recovered 
 
 ✻ Sautéed for 3m 36s · done 4:33 AM(260907)
 
+  2 tasks (0 done, 2 open)
+  ◻ Land vf_scale: cherry-pick, registry, test flips, scale goldens
+  ◻ Final verify: 5-area adversarial review + fixes
 
 <hr />
 
