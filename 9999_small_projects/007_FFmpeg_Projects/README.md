@@ -8,6 +8,8 @@
   - https://github.com/zmwangx/rust-ffmpeg-sys
 
 ### 완성도 높은 프로젝트
+- rav1d is an AV1 cross-platform decoder, open-source, and focused on speed and correctness. It is a Rust port of dav1d.
+  - https://github.com/memorysafety/rav1d
 - Video stabilization using gyroscope data (https://gyroflow.xyz/)
   - https://github.com/gyroflow/gyroflow
 
