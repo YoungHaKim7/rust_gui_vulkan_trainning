@@ -1,3 +1,13 @@
+# 나무위키 한글 정의
+
+- https://namu.wiki/w/FFmpeg
+
+## 영문 위키 정의(Eng.)
+
+- https://en.wikipedia.org/wiki/FFmpeg
+
+<hr />
+
 # 여기에 한달이상 투자해서 변환해보자(260905)
 - https://github.com/YoungHaKim7/ffmpeg_rs
 
