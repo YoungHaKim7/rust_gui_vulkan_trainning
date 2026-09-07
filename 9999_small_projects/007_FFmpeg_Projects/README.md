@@ -1,3 +1,9 @@
+# 해외에서 시도한 ffmpeg프로젝트들
+- 레딧글
+  - https://www.reddit.com/r/rust/comments/1n0fbhv/has_anyone_worked_with_ffmpeg_and_rust/
+- Safe, idiomatic, and performant Rust wrappers for FFmpeg, FFprobe, and FFplay
+  - https://github.com/RustNSparks/ffmpeg-suite-rs
+
 # 나무위키 한글 정의
 
 - https://namu.wiki/w/FFmpeg
