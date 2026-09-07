@@ -4,6 +4,9 @@
 - Safe, idiomatic, and performant Rust wrappers for FFmpeg, FFprobe, and FFplay
   - https://github.com/RustNSparks/ffmpeg-suite-rs
 
+- Ffmpeg binding프로젝트
+  - https://github.com/zmwangx/rust-ffmpeg-sys
+
 # 나무위키 한글 정의
 
 - https://namu.wiki/w/FFmpeg
