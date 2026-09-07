@@ -7,6 +7,10 @@
 - Ffmpeg binding프로젝트
   - https://github.com/zmwangx/rust-ffmpeg-sys
 
+### 완성도 높은 프로젝트
+- Video stabilization using gyroscope data (https://gyroflow.xyz/)
+  - https://github.com/gyroflow/gyroflow
+
 # 나무위키 한글 정의
 
 - https://namu.wiki/w/FFmpeg
