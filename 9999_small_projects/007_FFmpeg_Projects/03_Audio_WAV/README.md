@@ -1,10 +1,6 @@
 Recovered prerequisite: the FFmpeg C tree is back — now inside the repo (./FFmpeg/ + ./rust_projects/, your "two folders"). All of libswresample + the libavutil audio foundations verified present (~4K lines of C in scope for this wave).
 
-In flight — 5 spec agents deep-reading the C, then 5 worktree implementers:
-
-           │
-│              │ AVFrame audio fields    │ 
-
+- In flight — 5 spec agents deep-reading the C, then 5 worktree implementers:
 
 |     Zone     |        C source         |            Delivers              |
 |-|-|-|                            
