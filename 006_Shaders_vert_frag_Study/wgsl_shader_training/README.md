@@ -1,0 +1,2 @@
+- https://github.com/amengede/wgpu/tree/main/03-shaders
+- https://github.com/amengede/wgpu
