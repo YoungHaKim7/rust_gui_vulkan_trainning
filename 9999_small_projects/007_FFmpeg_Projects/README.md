@@ -44,6 +44,22 @@ Stretch — winit player window on the Vulkan pipeline
 
 <hr />
 
+# day4
+
+Phase 4a progress
+
+
+|                    Zone                    |            Status             |
+|-|-|
+| fundamentals (samplefmt + channel_layout +<br />audio_frame) | ✅ landed, C-verified         |
+| audioconvert (36 kernels + DSD copy)       | ✅ landed, 8 test corrections<br />  verified against C |
+| rematrix (3318 lines — matrix synthesis, <br />17.15 quantization, Dolby/DPLII, all 5<br /> template kernels)   | ✅ landed via single agent — <br />  |
+| resample (Kaiser polyphase)                | 🔄 agent working (math  <br />pre-pinned from my own C  <br />read)     |
+| SwrContext driver                          | queued (cached spec staged;<br /> re-extractable from the <br />journal)        |
+
+- The sequential single-agent tactic is holding — rematrix came back build_ok with 32 tests including two spec-vs-C corrections the agent discovered and pinned. Once resample lands, the driver stitches the three engines together behind swr_convert, and Phase 4a closes for the WAV/PCM/CLI wave.
+
+
 # day3
 
 ### Phase 3b — this session's progress
