@@ -44,6 +44,29 @@ Stretch — winit player window on the Vulkan pipeline
 
 <hr />
 
+# day6
+
+- ◯ impl-wav-demux-pcm  WAV demuxer + PCM decoder
+
+
+- Phase 4 status
+
+- 4a — libswresample: COMPLETE ✅ (307/307)
+- fundamentals (samplefmt / channel_layout / audio_frame)
+- audioconvert (36 kernels + DSD copy, mono planar normalization)
+- rematrix (3318 lines — coefficient synthesis, 17.15 quantization, Dolby/DPLII, the upstream-bug replication)
+- resample (Kaiser polyphase — bessel_i0, FilterBank, four element kernels, full context with hand-verified init anchors)
+- SwrContext driver — salvaged complete-but-uncommitted from the usage-wall casualty: swr_init validation, the full swr_convert loop, convert_frame, 
+  next_pts compensation modes, delay/flush, 32 tests including a 48k→44.1k→4roundtrip
+
+- 4b — underway 🔄
+- ✅ Shared base: CodecParameters audio fields + the PCM CodecId family (committed, 307/307)
+- 🔄 Zone 1 agent: format/wav.rs (RIFF walk, ff_get_wav_header fmt-tag map incl. WAVEFORMATEXTENSIBLE masks, pcm-style packet slicing) + codec/pcm.rs (decoder + the AudioDecoder trait)
+- Queued: zone 2 (WAV muxer + PCM encoder), zone 3 (CLI -i x.wav -ar/-ac/-sample_fmt + transcode loop + goldens vs system ffmpeg — mine, the shared-file work)
+
+- The sequential single-agent pattern keeps holding — each zone lands green in its worktree, I cherry-pick, and casualties get salvaged from their uncommitted drafts (three for three recoveries now).
+
+
 # day5 (Phase 4a)
 
 - WAV entry points scoped for 4b (riffdec's ff_get_wav_header for fmt parsing, wavenc's header write, wavdec's chunk walk). Standing summary:
