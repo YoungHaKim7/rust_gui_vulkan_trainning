@@ -46,31 +46,37 @@ Stretch — winit player window on the Vulkan pipeline
 
 # day5 (Phase 4a)
 
-WAV entry points scoped for 4b (riffdec's ff_get_wav_header for fmt parsing, wavenc's header write, wavdec's chunk walk). Standing summary:
+- WAV entry points scoped for 4b (riffdec's ff_get_wav_header for fmt parsing, wavenc's header write, wavdec's chunk walk). Standing summary:
 
-Phase 4a — one zone remaining
+- Phase 4a — one zone remaining
 
-Zone: fundamentals (samplefmt / channel_layout / audio_frame)
-Status: ✅
-────────────────────────────────────────
-Zone: audioconvert (36 kernels)
-Status: ✅
-────────────────────────────────────────
-Zone: rematrix (3318 lines, Dolby/DPLII, upstream-bug replication)
-Status: ✅
-────────────────────────────────────────
-Zone: resample (Kaiser polyphase, 1543 lines + 6 hand-verified pinning tests)
-Status: ✅ — 281 lib green at landing, current tree 275 lib + all integration
-targets green after your test-file reorganization
-────────────────────────────────────────
-Zone: SwrContext driver
-Status: 🔄 agent working now (wf_2541e33e-117) — swr_init validation order, the
-swr_convert buffer choreography (in_convert → rematrix → resample →
-out_convert), delay/flush/next_pts, options
+- Zone: fundamentals (samplefmt / channel_layout / audio_frame)
+- Status: ✅
 
-The driver's spec was re-staged from the journal (third /tmp clear — the journals remain the durable spec store). Its prompt carries the cross-zone wiring notes the rematrix implementer left (the exact call sites at swresample.c:676/679), and its tests include the full-driver constant-upsample test the raw resample zone couldn't run.
+────────────────────────────────────────
 
-When it lands: integrate → full suite → Phase 4a complete → 4b (WAV demux/mux + PCM codec + -i x.wav CLI + goldens vs system ffmpeg).
+- Zone: audioconvert (36 kernels)
+- Status: ✅
+  
+────────────────────────────────────────
+
+- Zone: rematrix (3318 lines, Dolby/DPLII, upstream-bug replication)
+- Status: ✅
+────────────────────────────────────────
+
+- Zone: resample (Kaiser polyphase, 1543 lines + 6 hand-verified pinning tests)
+- Status: ✅ — 281 lib green at landing, current tree 275 lib + all integration
+- targets green after your test-file reorganization
+
+────────────────────────────────────────
+
+- Zone: SwrContext driver
+- Status: 🔄 agent working now (wf_2541e33e-117) — swr_init validation order, the
+- swr_convert buffer choreography (in_convert → rematrix → resample → out_convert), delay/flush/next_pts, options
+
+- The driver's spec was re-staged from the journal (third /tmp clear — the journals remain the durable spec store). Its prompt carries the cross-zone wiring notes the rematrix implementer left (the exact call sites at swresample.c:676/679), and its tests include the full-driver constant-upsample test the raw resample zone couldn't run.
+
+- When it lands: integrate → full suite → Phase 4a complete → 4b (WAV demux/mux + PCM codec + -i x.wav CLI + goldens vs system ffmpeg).
 
 # day4
 
