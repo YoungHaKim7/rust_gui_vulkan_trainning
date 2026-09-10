@@ -5,6 +5,24 @@ cargo test --lib 2>&1 | grep -E "^test .* FAILED|^failures:" -A 20 | grep -E "pa
   ⎿  test filter::filter::tests::push_path_queues_and_counts ... FAILED
      test filter::filter::tests::ff_request_frame_pull_and_eof ... FAILED
      test filter::filter::tests::inlink_set_status_discards_queued_frames ... FAILED
+
+cargo test 2>&1 | grep -E "test result" | head -8; grep -n "^pub struct SwrContext\|^pub fn swr_\|    pub fn swr_\|pub fn convert\|pub fn init"
+      src/swresample/m…)
+  ⎿  test result: ok. 307 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s
+     test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+cargo test --lib -- swresample:: 2>&1 | grep "^test " | head -34
+  ⎿  test swresample::audioconvert::tests::audio_data_plane_addressing ... ok
+     test swresample::audioconvert::tests::bounds_guards ... ok
+     test swresample::audioconvert::tests::len_zero_no_op ... ok
+     … +31 lines (ctrl+o to expand)
+  ⎿  Allowed by auto mode classifier
+
+cargo test --lib -- swresample::tests 2>&1 | grep "^test swresample::tests" | head -34
+  ⎿  test swresample::tests::alloc_defaults ... ok
+     test swresample::tests::channel_mapping_routes ... ok
+     test swresample::tests::alloc_set_opts2_paths ... ok
 ```
 
 # test `ad()`
