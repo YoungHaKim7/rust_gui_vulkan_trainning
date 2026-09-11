@@ -1,7 +1,7 @@
 # grep이랑 test랑 섞어서 쓰기
 
 ```bash
-# 내가 원하는 문구만 가져오기
+# 내가 원하는 문구만 가져오기(PASS)
 $ cargo nextest run 2>&1 | grep -E "channel_layout" | grep -E "PASS"
         PASS [   0.003s] (363/429) ffmpeg_rs::util utils::channel_layout::channel_names
         PASS [   0.002s] (364/429) ffmpeg_rs::util utils::channel_layout::compare_semantics
@@ -19,6 +19,10 @@ $ cargo nextest run 2>&1 | grep -E "channel_layout" | grep -E "PASS"
         PASS [   0.003s] (376/429) ffmpeg_rs::util utils::channel_layout::index_round_trip
         PASS [   0.003s] (377/429) ffmpeg_rs::util utils::channel_layout::subset_and_union
         PASS [   0.003s] (378/429) ffmpeg_rs::util utils::channel_layout::string_index_lookups
+
+# FAILED 만 골라 보기
+cargo nextest run 2>&1 | grep -E "channel_layout" | grep -E "FAILED"
+
 
 #
 $ cargo nextest run 2>&1 | grep -E "channel_layout"
