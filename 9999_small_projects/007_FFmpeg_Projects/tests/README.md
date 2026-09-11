@@ -39,7 +39,7 @@ $ RUST_BACKTRACE=1 ./target/debug/ffmpeg_rs -v error -i /tmp/in.wav -f wav -y /t
 
 # `python3`으로 테스트
 
-```bash
+```py
  Bash(python3 -c "
   s = open('src/fftools/transcode.rs').read()
   s = s.replace('''                let n = s.convert_frame(Some(&mut out), Some(frame))?;
@@ -51,6 +51,49 @@ $ RUST_BACKTRACE=1 ./target/debug/ffmpeg_rs -v error -i /tmp/in.wav -f wav -y /t
                   let n = s.convert_frame(Some(&mut out), Some(frame))?;
                   out.pts = frame.pts;''')
   open('src/fftools/transcode.rs','w').write(s)"; cargo build --bins 2>&1 | grep -cE '^error'; ./target/debug/ffmpeg_rs -v error -i /tmp/in.wav -ac 2 -f wav -y /tmp/out_st.wav 2>&1 | head -6)
+
+# test2
+(python3 << 'EOF'
+  s = open('src/fftools/transcode.rs').read()
+  # drop the user's DBG stream print
+  s = s.replace('''    eprintln!(
+          "DBG in: rate={} ch={:?} fmt={:?} align={}",
+          in_st.codecpar.sample_rate,
+          in_st.codecpar.ch_layout,
+          in_st.codecpar.sample_fmt,
+          in_st.codecpar.block_align
+      );
+  ''', '')
+  # sample-counter pts for every encoded frame (swr_next_pts equivalent for
+  # linear chains)
+  s = s.replace('''    // The frame pump: decode → (convert) → encode.
+      let mut push_frame = |swr''', '''    // The frame pump: decode → (convert) → encode. Output pts run on a
+      // sample counter (swr_next_pts's linear-chain equivalent).
+      let mut out_pts: i64 =
+      let mut push_frame = |swr''')
+  s = s.replace('''
+              encoder.send_frame(Some(f))?;''', '''        for f in &converted {
+              let mut f = f
+              f.pts = out_pts;
+              out_pts += f.
+              f.duration = f.nb_samples as i64;
+              encoder.send_
+  open('src/fftools/transcode.rs','w').write(s)
+  print('pts counter in pla
+  EOF
+  cargo build --bins 2>&1 |in "" "-ar 44100"
+  "-sample_fmt flt" "-ac 2" "-ar 22050 -ac 2 -sample_fmt s32"; do
+  ./target/debug/ffmpeg_rs  -f wav -y /tmp/o.wav 2>&1
+  | head -1; echo "[$args] done"; done)
+pts counter in place
+0
+[] done
+[wav] wav_write_packet: NOPTS
+[-ar 44100] done
+[-sample_fmt flt] done
+[-ac 2] done
+[wav] wav_write_packet: NOPTS
+[-ar 22050 -ac 2 -samp
 ```
 
 # test `ad()`
