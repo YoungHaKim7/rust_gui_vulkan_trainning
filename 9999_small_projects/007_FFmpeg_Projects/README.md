@@ -44,6 +44,15 @@ Stretch — winit player window on the Vulkan pipeline
 
 <hr />
 
+# day8(`av_channel_layout_compare`)
+
+- Confirmed: C's swr_init at line 223-225 — if (s->in_ch_layout.order == UNSPEC) { s->in_ch_layout = copy of used_ch_layout (defaulted native) }. So after init, s->in_ch_layout IS the native default (mono → FrontCenter), and config_changed compares it against the FRAME's layout... the frame from ffmpeg's decoder carries UNSPEC too?! Then C would also flag INPUT_CHANGED...
+
+  NO — wait: C's av_channel_layout_compare treats UNSPEC-vs-native-with-same-count... av_channel_layout_compare: "if either is unspecified, compare only channel counts"? YES — av_channel_layout_compare (channel_layout.c) returns 0 (equal) when both have the same nb_channels and at least one is UNSPEC! That's the missing semantic: our ChannelLayout needs C's compare semantics (unspec-compatible compare) in config_changed — OR our PartialEq on ChannelLayout (derived) is stricter than av_channel_layout_compare.
+
+  Check our channel_layout.rs for a compare (the spec ported subset/union — maybe not compare). Fix: implement av_channel_layout_compare semantics in config_changed (or add ChannelLayout::compare). C's rule (channel_layout.c:~700): orders equal & masks equal → 0; both custom...; if either unspecified → compare nb_channels only.
+
+
 # day7(audio) 작업 오류
 
 The WIP is the final 4b piece — the CLI audio path (235 lines in transcode.rs), missing one import. Fixing and testing:
