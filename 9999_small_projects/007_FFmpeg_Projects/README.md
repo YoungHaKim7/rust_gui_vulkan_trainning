@@ -32,20 +32,19 @@
 ✅ Phase 1 — CPU pipeline (this)
 ✅ Phase 2 — Vulkan swscale: headless compute (vulkano), port of vf_scale_vulkan.c + libswscale/vulkan/, bilinear/bicubic, -s
 
-Phase 3 — filtergraph (libavfilter: buffersrc/sink, scale/format)
-
-✅ Phase 3a — libswscale variable-width filters on the CPU engine: initFilter port (utils.c:197-612), area/gauss/sinc/lanczos/spline via -scale_algo with filter-width widening on downscale, CPU fallback for algorithms the Vulkan engine cannot run
-✅ Phase 3b — filtergraph (libavfilter: buffersrc/sink, scale/format)
+✅Phase 3 — filtergraph (libavfilter: buffersrc/sink, scale/format)
+  ✅ ◼ Phase 3a — libswscale variable-width filters on the CPU engine: initFilter port (utils.c:197-612), area/gauss/sinc/lanczos/spline via -scale_algo with filter-width widening on downscale, CPU fallback for algorithms the Vulkan engine cannot run
+  ✅ ◼ Phase 3b — filtergraph (libavfilter: buffersrc/sink, scale/format)
 
 ✅ Phase 4 — swresample + audio paths
-  ◼ Phase 4a: audio foundations + swresample core (spec→implement→integrate)
-  ◼ Phase 4b: WAV container + PCM codec + CLI + goldens
+  ✅ ◼ Phase 4a: audio foundations + swresample core (spec→implement→integrate)
+  ✅ ◼ Phase 4b: WAV container + PCM codec + CLI + goldens
 
 Phase 5 — NUT container, more filters
 
 Pahse 6 - SIMD 추가
 
-x winit은 완전 난중에 할꺼임 일단 보
+x winit은 완전 난중에 할꺼임 일단 보류
 Stretch — winit player window on the Vulkan pipeline
 ```
 
