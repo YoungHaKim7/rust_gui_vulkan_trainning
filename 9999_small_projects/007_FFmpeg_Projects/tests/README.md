@@ -25,6 +25,12 @@ cargo test --lib -- swresample::tests 2>&1 | grep "^test swresample::tests" | he
      test swresample::tests::alloc_set_opts2_paths ... ok
 ```
 
+# `RUST_BACKTRACE=1` 활용법 
+
+```bash
+$ RUST_BACKTRACE=1 ./target/debug/ffmpeg_rs -v error -i /tmp/in.wav -f wav -y /tmp/out.wav 2>&1 | tail -25
+```
+
 # test `ad()`
 
 
