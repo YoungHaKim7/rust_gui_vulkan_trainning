@@ -31,6 +31,23 @@ cargo test --lib -- swresample::tests 2>&1 | grep "^test swresample::tests" | he
 $ RUST_BACKTRACE=1 ./target/debug/ffmpeg_rs -v error -i /tmp/in.wav -f wav -y /tmp/out.wav 2>&1 | tail -25
 ```
 
+
+# `python3`으로 테스트
+
+```bash
+ Bash(python3 -c "
+  s = open('src/fftools/transcode.rs').read()
+  s = s.replace('''                let n = s.convert_frame(Some(&mut out), Some(frame))?;
+                  out.pts = frame.pts;''', '''                eprintln!(
+                      \"DBG in: rate={} fmt={:?} ch=({},{:?}) | out: rate={} fmt={:?} ch=({},{:?})\",
+                      frame.sample_rate, frame.format, frame.ch_layout.nb_channels, frame.ch_layout.mask,
+                      out.sample_rate, out.format, out.ch_layout.nb_channels, out.ch_layout.mask,
+                  );
+                  let n = s.convert_frame(Some(&mut out), Some(frame))?;
+                  out.pts = frame.pts;''')
+  open('src/fftools/transcode.rs','w').write(s)"; cargo build --bins 2>&1 | grep -cE '^error'; ./target/debug/ffmpeg_rs -v error -i /tmp/in.wav -ac 2 -f wav -y /tmp/out_st.wav 2>&1 | head -6)
+```
+
 # test `ad()`
 
 
