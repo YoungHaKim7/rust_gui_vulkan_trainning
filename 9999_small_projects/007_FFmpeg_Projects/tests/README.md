@@ -1,7 +1,27 @@
 # grep이랑 test랑 섞어서 쓰기
 
 ```bash
- cargo nextest run 2>&1 | grep -E "channel_layout"
+# 내가 원하는 문구만 가져오기
+$ cargo nextest run 2>&1 | grep -E "channel_layout" | grep -E "PASS"
+        PASS [   0.003s] (363/429) ffmpeg_rs::util utils::channel_layout::channel_names
+        PASS [   0.002s] (364/429) ffmpeg_rs::util utils::channel_layout::compare_semantics
+        PASS [   0.003s] (365/429) ffmpeg_rs::util utils::channel_layout::const_masks_match_header
+        PASS [   0.003s] (366/429) ffmpeg_rs::util utils::channel_layout::default_for_first_match
+        PASS [   0.002s] (367/429) ffmpeg_rs::util utils::channel_layout::describe_native
+        PASS [   0.002s] (368/429) ffmpeg_rs::util utils::channel_layout::describe_from_string_round_trip
+        PASS [   0.002s] (369/429) ffmpeg_rs::util utils::channel_layout::describe_unspecified
+        PASS [   0.002s] (370/429) ffmpeg_rs::util utils::channel_layout::from_mask_and_check
+        PASS [   0.002s] (371/429) ffmpeg_rs::util utils::channel_layout::from_string_channel_counts
+        PASS [   0.002s] (372/429) ffmpeg_rs::util utils::channel_layout::from_string_channel_lists
+        PASS [   0.002s] (373/429) ffmpeg_rs::util utils::channel_layout::from_string_names
+        PASS [   0.003s] (374/429) ffmpeg_rs::util utils::channel_layout::from_string_masks_and_numbers
+        PASS [   0.003s] (375/429) ffmpeg_rs::util utils::channel_layout::standard_table_order
+        PASS [   0.003s] (376/429) ffmpeg_rs::util utils::channel_layout::index_round_trip
+        PASS [   0.003s] (377/429) ffmpeg_rs::util utils::channel_layout::subset_and_union
+        PASS [   0.003s] (378/429) ffmpeg_rs::util utils::channel_layout::string_index_lookups
+
+#
+$ cargo nextest run 2>&1 | grep -E "channel_layout"
    --> src/util/channel_layout.rs:207:15
    --> src/util/channel_layout.rs:216:15
    --> src/util/channel_layout.rs:219:15
