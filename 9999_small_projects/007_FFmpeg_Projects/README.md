@@ -44,6 +44,44 @@ Stretch — winit player window on the Vulkan pipeline
 
 <hr />
 
+# day7(audio) 작업 오류
+
+The WIP is the final 4b piece — the CLI audio path (235 lines in transcode.rs), missing one import. Fixing and testing:
+
+  Thought for 10s, ran 1 shell command
+
+354/354 with the audio CLI path compiled. Smoke-testing it end-to-end against system ffmpeg:
+
+  Thought for 9s, ran 1 shell command
+
+The audio path panics with a subtract overflow. Getting the backtrace:
+
+  Thought for 25s, ran 2 shell commands
+
+start − 4 underflows inside write_header — the fmt chunk's start is wrong. Reading the muxer's header sequence:
+
+  Thought for 16s, searched ommand
+
+start_tag looks right — neo see which call
+underflows:
+
+  Thought for 14s, ran 2 shell commands
+
+tell() returns ~0 after 20 written bytes — pos isn't tracking writes on the file
+path (tests used the mem h
+
+  Thought for 20s, ran 1 she
+                                                                                    write_all tracks pos correlues on the failing path:
+                                                                                    Thought for 13s, ran 1 she
+                                                                                    The probe run shows both enic vanish? Checking the
+run and output:                                                                  
+  Thought for 21s, ran 1 shell command                                             
+Two WIP bugs surfaced: our output is stereo when the input was mono (defaults not inherited from input), andard. Removing the probeand reading the audio transcode path:
+
+  Thought for 21s, ran 1 shell command                                          
+The inheritance looks right in transcode — so the demuxer probably mis-parses channels. Checking both su
+
+
 # day6
 
 - ◯ impl-wav-demux-pcm  WAV demuxer + PCM decoder
