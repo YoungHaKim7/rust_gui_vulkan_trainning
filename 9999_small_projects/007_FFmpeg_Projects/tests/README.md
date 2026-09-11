@@ -23,6 +23,11 @@ cargo test --lib -- swresample::tests 2>&1 | grep "^test swresample::tests" | he
   ⎿  test swresample::tests::alloc_defaults ... ok
      test swresample::tests::channel_mapping_routes ... ok
      test swresample::tests::alloc_set_opts2_paths ... ok
+
+# ffmpeg
+ffmpeg -hide_banner -loglevel error -f lavfi -i "sine=frequency=440:sample_rate=48000:duration=2" -c:a pcm_s16le -y /tmp/in.wav && ./target/debug/ffmpeg_rs -v error -i /tmp/in.wav -ac 2 -f wav -y /tmp/out_st.wav 2>&1 | head -8)
+DBG in: rate=48000 ch=ChannelLayout { order: Unspecified, nb_channels: 1, mask: 0 } fmt=S16 align=2
+Invalid argument: input configuration changed
 ```
 
 # `RUST_BACKTRACE=1` 활용법 
