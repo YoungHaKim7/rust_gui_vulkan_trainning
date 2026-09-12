@@ -3,6 +3,10 @@
 :1504,1513 m1496
 ```
 
+# wc활용
+
+- https://twpower.github.io/193-print-num-of-bytes-characters-words-lines-using-wc
+
 # sed
 ```bash
 sed -n '674,700p' src/swresample/resample.rs; sed -n '613,638p' src/swresample/resample.rs; sed -n '1033,1050p' src/swresample/resample.rs)
