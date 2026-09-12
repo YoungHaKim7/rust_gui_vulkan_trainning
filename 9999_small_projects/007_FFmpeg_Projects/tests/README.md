@@ -151,6 +151,11 @@ Invalid argument: input configuration changed
 $ RUST_BACKTRACE=1 ./target/debug/ffmpeg_rs -v error -i /tmp/in.wav -f wav -y /tmp/out.wav 2>&1 | tail -25
 ```
 
+# thread test
+
+```
+$ timeout 240 cargo test --lib -- format::nut::mux_tests -- --test-threads=1 2>&1 | grep -E "^test |test result|panicked" | head -12
+```
 
 # `python3`으로 테스트
 
