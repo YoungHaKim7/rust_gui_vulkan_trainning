@@ -210,6 +210,40 @@ pts counter in place
 [wav] wav_write_packet: NOPTS
 [-ar 22050 -ac 2 -samp
 ```
+### Python디버깅 하
+
+- Found it — a faithful-port subtlety: C's nut->headers is a fixed 128-slot arraywhere header_count grows past the 7 elision headers on every header (re)write, and out-of-range slots are simply zero-length. The partial used a Vec that stops at 7 — header_count += 1 then walks off the end. Fixing to C's array semantics:
+- Bash(
+```bash
+python3 << 'EOF'
+  s = open('src/format/nut.rs').read()
+
+  # 1. headers becomes C's fixed 128-slot array (len 0 = absent)
+  s = s.replace('''        self.headers = Vec::with_capacity(7);
+          self.headers.push(Vec::new()); // [0]: empty by definition
+          for h in ELISION_HEADERS {
+              self.headers.push(h.to_vec());
+          }
+          self.header_count = 7;''',
+  '''        // C's fixed `nut->headers[128]`: slots beyond the six elision
+          // prefixes are zero-length (absent) and header_count grows past 7
+          // on every header REwrite (nutenc.c:710) — find_best_header_idx
+          // and get_needed_flags safely index into those empty slots.
+          self.headers = vec![Vec::new(); 128];
+          self.headers[0] = Vec::new(); // [0]: empty by definition
+          for (i, h) in ELISION_HEADERS.iter().enumerate() {
+              self.headers[i + 1] = h.to_vec();
+          }
+          self.header_count = 7;''')
+  open('src/format/nut.rs','w').write(s)
+  print('array semantics restored')
+  EOF
+```
+
+```bash
+  cargo check --lib 2>&1 | grep -E "^error" -A 4 | head -8; timeout 60 cargo test --lib -- format::nut::mux_tests -- --test-threads=1 2>&1 | grep -E "test result|panicked" -A 3 | head -8)
+```
+
 
 # test `ad()`
 
