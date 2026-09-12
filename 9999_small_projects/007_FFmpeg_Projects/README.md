@@ -50,6 +50,23 @@ Stretch — winit player window on the Vulkan pipeline
 
 <hr />
 
+# Phase 5 is rolling. Standing state:
+
+- Phase 5 is rolling. Standing state:
+
+- Phase 5 — NUT container + more filters
+
+- Zone A 🔄 (running, wf_583602b5-42b): the NUT demuxer — format/nut.rs carrying nut.c's shared framing core (vint/svint, CRC, packet-header helpers — made pub for the muxer zone) + nutdec.c's read path (main/stream headers, info, frame codes, syncpoints, decode_frame with exact pts/duration/flags, C error texts). Hand-built byte fixtures as tests.
+
+- Queued (sequential, the proven pattern):
+  - Zone B — NUT muxer (nutenc.c, 1258 lines) reusing Zone A's framing core
+  - Zone C — -f nut CLI plumbing + goldens. Honest fidelity framing: byte-comparing two NUT muxes isn't a stable target (frame-code choice, index presence, header ordering are all free), so the goldens cross-check through the OTHER tool — ffmpeg muxes NUT → we demux → payload equal, and vice versa
+  - Zone D — the pixel filters: crop (398), transpose (419), hflip (157) — real negotiation + geometry work on the Phase-3b filtergraph, one zone
+
+- Suite verified green (all 10 targets) before launch; the filter trio was scoped at 974 lines of C — right for one implementer. I'll integrate Zone A when its notification lands.
+
+- ※ recap: Porting FFmpeg to Rust phase by phase; Phases 1-4 (video pipeline, GPU scaling, filtergraph, audio) are done and green. Phase 5's NUT demuxer agent is building now; next I integrate it, then the NUT muxer. (disable recaps in /config)
+
 # day8(`av_channel_layout_compare`)
 
 - Confirmed: C's swr_init at line 223-225 — if (s->in_ch_layout.order == UNSPEC) { s->in_ch_layout = copy of used_ch_layout (defaulted native) }. So after init, s->in_ch_layout IS the native default (mono → FrontCenter), and config_changed compares it against the FRAME's layout... the frame from ffmpeg's decoder carries UNSPEC too?! Then C would also flag INPUT_CHANGED...
