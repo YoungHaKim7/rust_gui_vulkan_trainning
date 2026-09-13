@@ -214,6 +214,21 @@ pts counter in place
 [-ac 2] done
 [wav] wav_write_packet: NOPTS
 [-ar 22050 -ac 2 -samp
+
+# grep이랑 섞어서 
+grep -n "r_frame_rate" FFmpeg/libavformat/nutenc.c; python3 -c "
+      b=open('/tmp/ff.nut','rb').read()…)
+  ⎿  564:        if (st->r_frame_rate.num>0 && st->r_frame_rate.den>0)
+     565:            snprintf(buf, sizeof(buf), "%d/%d", st->r_frame_rate.num, st->r_frame_rate.den);
+     568:        count += add_info(dyn_bc, "r_frame_rate", buf);
+     has r_frame_rate tag: True
+
+# python
+python3 << 'EOF'
+      import re…)
+  ⎿  108 //! | `r_frame_rate` from the info header (`nutdec.c:603-609`) | per-stream AVSt
+     126 //! | metadata/chapters (`write_chapter`, `ff_metadata_conv_ctx`, `ff_nut_dispos
+     1191             // Metadata dictionary, Disposition bits and r_frame_rate
 ```
 ### Python디버깅 하
 
