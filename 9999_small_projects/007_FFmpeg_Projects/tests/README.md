@@ -261,7 +261,7 @@ python3 << 'EOF'
      126 //! | metadata/chapters (`write_chapter`, `ff_metadata_conv_ctx`, `ff_nut_dispos
      1191             // Metadata dictionary, Disposition bits and r_frame_rate
 ```
-### Python디버깅 하
+### Python디버깅 하기 
 
 - Found it — a faithful-port subtlety: C's nut->headers is a fixed 128-slot arraywhere header_count grows past the 7 elision headers on every header (re)write, and out-of-range slots are simply zero-length. The partial used a Vec that stops at 7 — header_count += 1 then walks off the end. Fixing to C's array semantics:
 - Bash(
@@ -289,6 +289,208 @@ python3 << 'EOF'
   open('src/format/nut.rs','w').write(s)
   print('array semantics restored')
   EOF
+
+# 다른
+Bash(python3 << 'EOF'
+  import re
+  lines = open('src/codec/audio/mp3.rs').readlines()
+  for i, l in enumerate(lines, 1):
+      if re.search(r'fn decode_header_pins|fn mpa_decode_header_maps|fn free_format_frame_is_flagged|fn getbits_safe_reader_semantics|fn huff_table1_codes|fn band_tables_and_index_long_pin', l):
+          print(f"=== {l.strip()[:60]} at {i}")
+          print(''.join(lines[i:i+26]))
+          print()
+  EOF)
+=== fn decode_header_pins_bitfields_and_frame_sizes() { at 3105
+        // MPEG-1 L3 44100 stereo 128k, no padding.
+        let mut h = MpaDecodeHeader::default();
+        assert!(!avpriv_mpegaudio_decode_header(&mut h, 0xFFFB9000).unwrap());
+        assert_eq!(
+            (h.layer, h.sample_rate, h.sample_rate_index, h.bit_rate, h.frame_size),
+            (3, 44100, 0, 128000, 417)
+        );
+        assert_eq!((h.nb_channels, h.mode, h.mode_ext, h.lsf,
+h.error_protection), (
+
+        // MPEG-1 L3 4me = 576 + 1.
+        let mut h = MpaDecodeHeader::default();
+        assert!(!avprit h, 0xFFFBB6C0).unwrap());
+        assert_eq!(
+            (h.sample_nb_channels, h.frame_size),
+            (48000, 1, 1, 577)
+        );
+        assert_eq!(h.lsf, 0);
+
+        // MPEG-2 LSF L3 22050 stereo 56k: rate halves, index +3,
+        // frame divides by (rate << lsf).
+        let mut h = MpaDecodeHeader::default();
+        assert!(!avprit h, 0xFFF36000).unwrap());
+        assert_eq!((h.sample_rate, h.sample_rate_index, h.lsf, h.frame_size),
+(22050, 3, 1, 182));
+
+        // MPEG-2.5 L36.
+        let mut h = MpaDecodeHeader::default();
+
+
+=== fn free_format_fra
+        // bitrate_index 0 passes check_header but signals free format
+        // (mpegaudiod1).
+        let mut h = MpaDecodeHeader::default();
+        assert!(avpriv h, 0xFFFB1000).unwrap());
+        assert_eq!(h.frame_size, 0);
+    }
+
+    #[test]
+    fn mpa_decode_header_maps_codec_and_samples() {
+        let (mut sr, m) =
+            (0, 0, 0, 0, CodecId::None);
+        let coded = ff, &mut sr, &mut ch, &mut
+fs, &mut br, &mut id).unwrap();
+        assert_eq!((sr);
+        assert_eq!((id, fs, coded), (CodecId::Mp3, 1152, 417));
+
+        let coded = ff_mpa_decode_header(0xFFF36000, &mut sr, &mut ch, &mut
+fs, &mut br, &mut id).
+        assert_eq!((id, fs, coded), (CodecId::Mp3, 576, 182)); // lsf → 576
+samples
+
+        let coded = ff, &mut sr, &mut ch, &mut
+fs, &mut br, &mut id).unwrap();
+        assert_eq!((id1152, 417));
+
+        let coded = ff_mpa_decode_header(0xFFF72000, &mut sr, &mut ch, &mut
+fs, &mut br, &mut id).unwrap();
+        assert_eq!((id384, 68));
+
+        // free formatper too.
+        assert!(ff_mpa_decode_header(0xFFFB1000, &mut sr, &mut ch, &mut fs,
+&mut br, &mut id).is_e
+
+
+=== fn mpa_decode_header_maps_codec_and_samples() { at 3161
+        let (mut sr, m) =
+            (0, 0, 0, 0, CodecId::None);
+        let coded = ff, &mut sr, &mut ch, &mut
+fs, &mut br, &mut id).unwrap();
+        assert_eq!((sr);
+        assert_eq!((id, fs, coded), (CodecId::Mp3, 1152, 417));
+
+        let coded = ff_mpa_decode_header(0xFFF36000, &mut sr, &mut ch, &mut
+fs, &mut br, &mut id).
+        assert_eq!((id, fs, coded), (CodecId::Mp3, 576, 182)); // lsf → 576
+samples
+
+        let coded = ff, &mut sr, &mut ch, &mut
+fs, &mut br, &mut id).unwrap();
+        assert_eq!((id1152, 417));
+
+        let coded = ff, &mut sr, &mut ch, &mut
+fs, &mut br, &mut id).unwrap();
+        assert_eq!((id384, 68));
+
+        // free formatper too.
+        assert!(ff_mpa_decode_header(0xFFFB1000, &mut sr, &mut ch, &mut fs,
+&mut br, &mut id).is_e
+    }
+
+    // ================= static tables ================================
+
+    #[test]
+    fn bitrate_and_fre
+        // ff_mpa_bitrate_tab (mpegaudiotabs.h:27-35): spot rows.
+        assert_eq!(FF_, 40, 48, 56, 64, 80, 96,
+112, 128, 160, 192, 224, 256, 320]);
+        assert_eq!(FF_6);
+
+
+=== fn band_tables_and_index_long_pin() { at 3208
+        // ff_band_sizws 0 and 8.
+        assert_eq!(FF_BAND_SIZE_LONG[0][0], 4);
+        assert_eq!(FF_
+        assert_eq!(FF_BAND_SIZE_LONG[8], [12, 12, 12, 12, 12, 12, 16, 20, 24,
+28, 32, 40, 48, 56, 64
+        // ff_band_size_short row 0.
+        assert_eq!(FF_BAND_SIZE_SHORT[0], [4, 4, 4, 4, 6, 8, 10, 12, 14, 18,
+22, 30, 56]);
+        // ff_band_indumulative half-sums.
+        let t = tables();
+        assert_eq!(t.b6, 8, 10, 12, 15, 18, 22,
+26, 31, 37, 45, 55, 67, 81, 98, 119, 144, 171, 209, 288]);
+        // row 8 (8 kH
+        assert_eq!(t.band_index_long[8][1], 6);
+        assert_eq!(t.b + 8 + 10 + 12 + 14 + 16 +
+20 + 24 + 28 + 32 + 40 + 48 + 56 + 64 + 76 + 90);
+        // ff_mpa_pret
+        assert_eq!(FF_MPA_PRETAB[0], [0; 22]);
+        assert_eq!(FF_MPA_PRETAB[1][11], 1);
+        assert_eq!(FF_MPA_PRETAB[1][17], 3);
+    }
+
+    // ===================================
+
+    /// Slice the conc
+    fn table_lens(t: usize) -> Vec<u8> {
+        let mut off =
+        for (i, &m) in MPA_HUFF_SIZES_MINUS_ONE.iter().enumerate() {
+            if i == t
+                return MPA_HUFFLENS[off..off + m + 1].to_vec();
+
+
+=== fn huff_table1_cod { at 3288
+        // vlc.c:319-345 assigns canonical codes in ARRAY order:
+        // 0x11→'000','1'.
+        // Decoded symbols are the packed form
+        // (high << 1 423-427).
+        let vlc = BigVlc::build(&table_lens(0), &table_syms(0));
+        let decode = |bits: &[u32]| -> i32 {
+            let bytes: Vec<u8> = bits
+                .chunk
+                .map(|c| c.iter().fold(0u8, |a, &b| (a << 1) | b as u8))
+                .colle
+            let mut gb = GetBits::init(bytes, bits.len() as i64);
+            vlc.decode
+        };
+        assert_eq!(dec: (0x10<<1)|16|1
+        assert_eq!(decode(&[0, 0, 1]), 1); //  0x01
+        assert_eq!(dec 0x10<<1
+        assert_eq!(decode(&[1]), 0); //     0x00
+    }
+
+    #[test]
+    fn quad_vlc_decodes_both_tables() {
+        // Table A (co_codes[0]/bits[0]
+        // (common.c:352-360) — symbol 0 has code '1' (1 bit).
+        let q = &table
+        let mut gb = GetBits::init(vec![0b1000_0000], 8);
+        assert_eq!(q.d
+
+
+=== fn getbits_safe_reader_semantics() { at 3480
+        let mut gb = G, 0xff], 16);
+        assert_eq!(gb.get_bits(4), 0b1010);
+        assert_eq!(gb.
+        assert_eq!(gb.get_bits(7), 0b1001_111); // '1','00' + four 1s
+        assert_eq!(gb.eal bits + a past-end 0
+        assert_eq!(gb.get_bits_count(), 16); // saturated at buffer end
+        // reads past tion saturates.
+        let mut gb = GetBits::init(vec![0xff], 8);
+        assert_eq!(gb.
+        assert_eq!(gb.get_bits(8), 0);
+        assert_eq!(gb.rated at buffer end
+        // partial last byte: bits beyond size_in_bits but inside the
+        // byte are stffer + ceil).
+        let mut gb = GetBits::init(vec![0b1000_0000], 4);
+        assert_eq!(gb.
+        assert_eq!(gb.get_bits(1), 1); // real bit from the partial byte
+        // skip_bits_ler.
+        let mut gb = GetBits::init(vec![0xff, 0x00], 16);
+        gb.skip_bits_l
+        assert_eq!(gb.get_bits_count(), 11);
+        gb.skip_bits_l
+        assert_eq!(gb.get_bits_count(), 7);
+        // align_get_b
+        let mut gb = GetBits::init(vec![0xff, 0x00], 16);
+        gb.skip_bits(3
+        assert_eq!(gb.align_get_bits(), 1);
 ```
 
 ```bash
