@@ -138,6 +138,35 @@ failures:
 thread 'golden_rawvideo_to_y4m_round_trip_is_byte_exact' (14353) panicked at tests/golden.rs:196:5:
 ffmpeg_rs failed:
 
+# cargo build
+
+cargo build --lib 2>&1 | grep -E "^error" -A 5 | head -14)
+  ⎿  error[E0425]: cannot find value `stream_id` in this scope
+             st.codecpar.color_range = color_range;
+             st.codecpar.field_order = field_order;
+
+             self.packet_size = imgutils::get_buffer_size(pix_fmt, width as u32, height as u32, 1)?
+                 + Y4M_FRAME_MAGIC_LEN;
+             self.data_offset = io.tell();
+             };
+
+             // Note: C's YUVJ* formats would also force " XCOLORRANGE=FULL" here;
+             // those deprecated aliases are not part of the ported format set.
+             let colorspace = colorspace_token(st);
+
+             let header = format!(
+                 "{} W{width} H{height} F{}:{} I{inter} A{aspectn}:{aspectd}{}{}\n",
+                 std::str::from_utf8(Y4M_MAGIC).unwrap(),
+                 fps.num,
+                 fps.den,
+                 colorspace,
+                 colorrange,
+             );
+             io.write_all(header.as_bytes()).map_err(|e| {
+                 log_error!(
+
+  Bash(grep -n "let fps" -B 2
+
 
 # ffmpeg
 ffmpeg -hide_banner -loglevel error -f lavfi -i "sine=frequency=440:sample_rate=48000:duration=2" -c:a pcm_s16le -y /tmp/in.wav && ./target/debug/ffmpeg_rs -v error -i /tmp/in.wav -ac 2 -f wav -y /tmp/out_st.wav 2>&1 | head -8)
