@@ -50,6 +50,20 @@ Stretch — winit player window on the Vulkan pipeline
 
 <hr />
 
+# `mux` fix
+- The y4m muxer derives F from the stream's time_base, not avg_frame_rate. The transcode sets out_st.set_pts_info(den, num) from avg — set_pts_info sets time_base
+  = reduce(den/num)... For avg 10/1 → set_pts_info(1, 10) → time_base 1/10 → F = 10/1 ✓ in theory.
+
+  But we got F25:1 — meaning in_st.avg_frame_rate was still 0/25 when transcode ran → default branch set_pts_info(1,25)? Line 345: if in_st.avg_frame_rate.num > 0
+  { ... } else set_pts_info(1,25). So avg was still UNKNOWN/0 at transcode time.
+
+  Why? My demux fix sets avg only when the tag parsed. Did the tag parse? Check: the demuxer's decode_info runs during read_header — yes info packets are read at
+  header time (C reads them in the header scan). But WAIT — the info packet with r_frame_rate comes AFTER the main+stream headers; our read_header reads until
+  first syncpoint. It should have parsed. Unless the stream ordering: stream_id_plus1 handling — for STREAM info, the tag uses stream_id_plus1 > 0. My check if
+  stream_id_plus1 != 0 && name == "r_frame_rate" — right.
+
+  Let me test the demux directly: read the header and print avg. Quick unit check via a debug run.
+
 # Phase 5 is rolling. Standing state:
 
 - Phase 5 is rolling. Standing state:
