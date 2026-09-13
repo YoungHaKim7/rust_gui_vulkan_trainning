@@ -50,6 +50,37 @@ Stretch — winit player window on the Vulkan pipeline
 
 <hr />
 
+# Phase 5 — COMPLETE ✅ (memory updated)
+- NUT container: demuxer + muxer, the write_index infinite-loop fix, r_frame_rate
+  tag — ffmpeg↔ours round trips byte-identical both ways (video + audio), 3
+  cross-tool goldens
+- Geometry filters: crop / transpose / hflip / vflip — 9 chains byte-exact vs
+  system ffmpeg, 42 unit tests
+- Suite: 421 lib + 20 golden, all green in ~5s
+
+## Codec ladder (your roadmap) — step 3 in flight 🔄
+```
+Ladder: 1. PCM
+Status: ✅
+────────────────────────────────────────
+Ladder: 2. WAV
+Status: ✅
+────────────────────────────────────────
+Ladder: 3. MP3 decode
+Status: 🔄 agent working — the full float mpegaudio family (~3.3K lines of C:
+header unpack, L3 sideinfo/scalefactors, requantize + MS/intensity stereo, alias
+ reduce, dct32 IMDCT, the polyphase synth window via the tablegen formulas) →
+codec/mp3.rs as an AudioDecoder producing FLTP frames
+────────────────────────────────────────
+Ladder: 4. AAC → 5. H.264 → 6. MP4 → …
+Status: queued, one at a time
+```
+- The MP3 zone explicitly allows an honest partial (dependency-ordered with named Unsupported guards) rather than a fake-complete — after it lands I'll wire the registry, smoke it against system ffmpeg's decode output, and queue the MP3 frame demuxing so -i file.mp3 works end to end. I'll report when the notification arrives.
+
+- 1 tasks (0 done, 1 open)
+  - ◻ Codec ladder: MP3 decoder (agent in flight), then demux+golden
+- ◯ impl-mp3-decode  Port the MP3 decoder (mpegaudio family, decode side) to codec/mp3.rs — single agent, sequential  
+
 
 # Phase 5 progress
 
