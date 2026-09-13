@@ -165,6 +165,8 @@ cargo build --lib 2>&1 | grep -E "^error" -A 5 | head -14)
              io.write_all(header.as_bytes()).map_err(|e| {
                  log_error!(
 
+ cargo test --lib -- codec::audio::mp3 2>&1 | grep -B 2 -A 6 "panicked" | head -40
+
   Bash(grep -n "let fps" -B 2
 
 
