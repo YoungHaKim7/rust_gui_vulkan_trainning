@@ -50,6 +50,40 @@ Stretch — winit player window on the Vulkan pipeline
 
 <hr />
 
+# Codec ladder (your roadmap) — step 3 in flight 🔄
+
+|     Ladder      |                                                           Status                                                            |
+|-|-|
+| 1. PCM          | ✅                                                                                                                          |
+| 2. WAV          | ✅                                                                                                                          |
+| 3. MP3 decode                | 🔄 agent working — the full float mpegaudio family (~3.3K lines of C: header unpack, L3 sideinfo/scalefactors, requantize + <br />MS/intensity stereo, alias reduce, dct32 IMDCT, the polyphase synth window via the tablegen formulas) → codec/mp3.rs as an <br />AudioDecoder producing FLTP frames|
+| 4. AAC → <br /> 5. H.264 →<br /> 6. MP4    |  queued, one at a time                                                                        |
+
+- The MP3 zone explicitly allows an honest partial (dependency-ordered with named Unsupported guards) rather than a fake-complete — after it lands I'll wire the registry, smoke it against system ffmpeg's decode output, and queue the MP3 frame demuxing so -i file.mp3 works end to end. I'll report when the notification arrives.
+  - `mpegaudiotabs.h` LSF row, band index 283), one test over-specification (C's reader zero-pads — 240 is right), and the huff one needs empirical probing. Fixing the clear ones first:
+
+- C verified. Three test bugs and two impl bugs. Reading the two impl sites:
+
+
+- C verdicts: three test bugs (free-format header byte, 156 is C-correct per mpegaudiotabs.h LSF row, band index 283), one test over-specification (C's reader zero-pads — 240 is right), and the huff one needs empirical probing. Fixing the clear ones first:
+
+
+- Two more to pin empirically — probing the header fields and huff table 0 directly:
+
+
+- MPEG-1 — impl correct). Probing the huff decode directly:
+
+- Both header mysteries are C-verified test bugs (0xFFF72000 is MPEG-2 LSF, not MPEG-1 — impl correct). Probing the huff decode directly:
+
+- All decodes return 49 and always consume 3 bits — the search never matches. Tracing inside decode itself:
+
+- Every bit reads 0 even for a set bit. Probing bit() directly:
+
+
+- Found it — the test helper packs bits as a number (LSB-aligned) while the reader consumes MSB-first; 0b001 becomes 0x01, so every decoded bit is 0. The impl is correct. Fixing the helper + the two MPEG-1 headers (0xFFF72/0xFFF59 are MPEG-2 LSF — C-verified 104/522) and cleaning my probes:
+
+<hr />
+
 # Phase 5 — COMPLETE ✅ (memory updated)
 - NUT container: demuxer + muxer, the write_index infinite-loop fix, r_frame_rate
   tag — ffmpeg↔ours round trips byte-identical both ways (video + audio), 3
