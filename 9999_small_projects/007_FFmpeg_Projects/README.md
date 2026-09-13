@@ -50,6 +50,23 @@ Stretch — winit player window on the Vulkan pipeline
 
 <hr />
 
+
+# Phase 5 progress
+
+|         Item          |                       Status                       |
+|-|-|
+| NUT demuxer (Zone A)  | ✅                                                 |
+| NUT muxer (Zone B)    | ✅                                                 |
+|                       | ✅ fixed — write_index's for(j...) → while         |
+| Infinite-loop bug     | ✅ fixed — write_index's for(j...) → while <br />translation lost the increment; one-line restore,<br />all five disabled tests re-enabled green  |
+| r_frame_rate tag + <br />cross-tool goldens <br />(Zone C)   | ✅ — ffmpeg→NUT→ours is byte-identical both ways <br /> ns committed  |
+| crop / transpose /<br />hflip / vflip (Zone D)    | 🔄 agent working — 974 lines of C → 3 files; crop <br />transpose's 4 modes, <br />the flip pair in one file |
+
+- Suite standing at 379 libn, all green in ~5s.
+
+- On perf.data: it's root-oopen it — if you want theprofile itself analyzed, run ! sudo chown gy:gy perf.data. That said, the root cause is already found anhe DBG instrumentationtrail in the conversation above): the "slow" tests were hung in the trailer's index writer, and their freal work — shrinkingsamples 90% would not have helped.
+  - Your codec roadmap (PCM→WAV→MP3→AAC→H.264→MP4→…→MKV) is noted for the phases     after this one — FLAC or  increment after the filter trio, each as its own zone in the codec/audio/ tree you sketched. I'll integrate Zone D when its notificat
+
 # `mux` fix
 
 ```bash
