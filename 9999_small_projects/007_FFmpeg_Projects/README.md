@@ -51,6 +51,19 @@ Stretch — winit player window on the Vulkan pipeline
 <hr />
 
 # `mux` fix
+
+```bash
+All four round trips pass:
+  1. ours→NUT→ffmpeg: byte-identical (video)
+  2. ffmpeg→NUT→ours: byte-identical (video, after the r_frame_rate fix)
+  3. ffmpeg→NUT→ours (audio): payload-identical
+  4. ours→NUT (audio)→ffmpeg: payload-identical
+
+  NUT is fully cross-verified. Now add the golden tests, commit, then Zone D (filters). Let me write the goldens.
+
+                                                                                                                                           10:14 AM glm-5.3
+● All four cross-tool NUT round trips are byte/payload-identical. Adding the golden tests and committing:
+```
 - The y4m muxer derives F from the stream's time_base, not avg_frame_rate. The transcode sets out_st.set_pts_info(den, num) from avg — set_pts_info sets time_base
   = reduce(den/num)... For avg 10/1 → set_pts_info(1, 10) → time_base 1/10 → F = 10/1 ✓ in theory.
 
