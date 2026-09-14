@@ -18,3 +18,11 @@ git show --stat b5e61c4 | head -8; git status --short | grep -v "^??" | head -3;
       "FAILED|test result" | he…)
 
 ```
+
+
+# git diff
+
+```
+git diff --no-index src/codec/audio/mp3.rs /tmp/mp3_fix_partial.rs 2>/dev/null | grep -E "^\+" | grep -vE "^\+\+\+" | grep -E "fn |// |DBG|dump|imdct|synth|window|enwindow" | head -20
+
+```
