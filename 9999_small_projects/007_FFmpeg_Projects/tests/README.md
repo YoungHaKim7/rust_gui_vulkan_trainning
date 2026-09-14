@@ -71,6 +71,10 @@ $ cargo nextest run 2>&1 | grep -E "channel_layout"
         PASS [   0.002s] (376/429) ffmpeg_rs::util utils::channel_layout::string_index_lookups
         PASS [   0.003s] (377/429) ffmpeg_rs::util utils::channel_layout::subset_and_union
 
+$ cargo test --lib --no-run 2>&1 | grep -E "^error" -A 6 | head -12
+
+⎿  error[E0308]: mismatched types
+         --> src/codec/audio/mp3.rs:4165:43
 
 cargo test --lib 2>&1 | grep -E "^test .* FAILED|^failures:" -A 20 | grep -E "panicked|FAILED|assert|left|right|Error|at src" | head -50)
   ⎿  test filter::filter::tests::push_path_queues_and_counts ... FAILED
