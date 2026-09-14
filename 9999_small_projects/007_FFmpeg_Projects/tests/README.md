@@ -193,6 +193,12 @@ Invalid argument: input configuration changed
 
 ```
 
+# 내가 원하는것만 test하기
+
+```bash
+cargo test --lib -- codec::audio::mp3::smoke -- --nocapture 2>&1 | tail -12
+```
+
 # `RUST_BACKTRACE=1` 활용법 
 
 ```bash
