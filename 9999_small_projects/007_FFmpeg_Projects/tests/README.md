@@ -172,12 +172,19 @@ cargo build --lib 2>&1 | grep -E "^error" -A 5 | head -14)
  cargo test --lib -- codec::audio::mp3 2>&1 | grep -B 2 -A 6 "panicked" | head -40
 
   Bash(grep -n "let fps" -B 2
+```
 
+# ffmpeg원본으로 test
+
+```
 
 # ffmpeg
 ffmpeg -hide_banner -loglevel error -f lavfi -i "sine=frequency=440:sample_rate=48000:duration=2" -c:a pcm_s16le -y /tmp/in.wav && ./target/debug/ffmpeg_rs -v error -i /tmp/in.wav -ac 2 -f wav -y /tmp/out_st.wav 2>&1 | head -8)
 DBG in: rate=48000 ch=ChannelLayout { order: Unspecified, nb_channels: 1, mask: 0 } fmt=S16 align=2
 Invalid argument: input configuration changed
+
+ffmpeg -hide_banner -loglevel error -f lavfi -i "sine=frequency=440:sample_rate=44100:duration=2" -c:a libmp3lame -b:a 128k -f mp3 -y
+      /tmp/t.mp3 2>&1 | head -1;…
 ```
 
 - git log 후 fail테스트 찾
