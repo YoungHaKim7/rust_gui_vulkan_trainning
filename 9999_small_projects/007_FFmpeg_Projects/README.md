@@ -50,6 +50,26 @@ Stretch — winit player window on the Vulkan pipeline
 
 <hr />
 
+#   Let me debug it directly. The plan:
+- 1. Add mid-chain dumps to the decoder (IMDCT output / synth output per frame)
+- 2. Compare against what C would produce — I can't easily run C, but I CAN compare the final signal against the reference at a structural level.
+
+- Actually, a smarter approach: the correlation is zero at ALL lags. If the bug were a constant delay, some lag would correlate. Zero correlation everywhere with correct energy means either:
+  - Channel swap + phase inversion per granule? L↔R swap would still correlate 
+  - Per-granule time REVERSAL: energy/spectrum preserved, correlation zero! A
+    reversed IMDCT output o do exactly this.
+  - Random-ish block permutation of the 18-sample or 32-sample sub-blocks.
+
+- Test: reverse our whole output and check correlation with ref? No — if sub-blocks are reversed individually. But if each granule (576
+  samples) is internally reversed, correlation of our-vs-reversed-our... complex.  
+  Better empirical probe: autocorrelation of our output at 576 lag vs ref's at 576. For a pure sine, autocorr40Hz periodicity either
+  way.                                                                             
+  Direct approach instead: compare our decoded samples against the reference SAMPLE BY SAMPLE in the first 11formations:
+  1. our[k] vs ref[k] — known zero
+  2. our granule-reversed: , compare
+  3. reverse each 32-block (synth output)
+  4. reverse each 18-block                                                                                That will pinpoint the rel is the bug. Let me dothis in Python on /tmp/our.pcm (need to regenerate it — the dump hook was added before the fmt commits; c
+
 # Codec ladder (your roadmap) — step 3 in flight 🔄
 
 |     Ladder      |                                                           Status                                                            |
