@@ -70,6 +70,623 @@ Stretch — winit player window on the Vulkan pipeline
   3. reverse each 32-block (synth output)
   4. reverse each 18-block                                                                                That will pinpoint the rel is the bug. Let me dothis in Python on /tmp/our.pcm (need to regenerate it — the dump hook was added before the fmt commits; c
 
+```bash
+Bash(grep -n "sb_samples\|synth_filter\|fn synth" src/codec/audio/mp3.rs | head -12; sed -n '1560,1620p' FFmpeg/libavcodec/mpegaudiodec_template.c)
+41://! | `ff_mpa_synth_filter_float` (`:178-195`) | [`mpa_synth_filter`] |
+56://! long bands, three 12-point for short) into `sb_samples[ch][36][32]`
+828:    sb_samples: [[f32; 36 * SBLIMIT]; MPA_MAX_CHANNELS],
+849:            sb_samples: [[0.0; 36 * SBLIMIT]; MPA_MAX_CHANNELS],
+1023:                    &mut self.sb_samples,
+1190:                    &mut self.sb_samples,
+1376:                let row = &self.core.sb_samples[ch][i * SBLIMIT..(i + 1) * SBLIMIT];
+1377:                mpa_synth_filter(
+2196:/// `out` is the granule's `sb_samples` base, `buf` the channel's
+2507:/// `ff_mpa_synth_filter_float` (`mpegaudiodsp_template.c:178-195`) —
+2509:fn mpa_synth_filter(
+2516:    sb_samples: &[f32],
+{
+    const uint8_t *buf
+    int buf_size        = avpkt->size;
+    MPADecodeContext *s
+    uint32_t header;
+    int ret;
+
+    int skipped = 0;
+    while(buf_size && !*buf){
+        buf++;
+        buf_size--;
+        skipped++;
+    }
+
+    if (buf_size < HEADER_SIZE)
+        return AVERROR_
+
+    header = AV_RB32(bu
+    if (header >> 8 == AV_RB32("TAG") >> 8) {
+        av_log(avctx, A tag\n");
+        return buf_size + skipped;
+    }
+    ret = avpriv_mpegaudio_decode_header((MPADecodeHeader *)s, header);
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Header missing\n");
+        return AVERROR_
+    } else if (ret == 1) {
+        /* free format:ze */
+        s->frame_size = -1;
+        return AVERROR_
+    }
+    /* update codec inf
+    av_channel_layout_uninit(&avctx->ch_layout);
+    avctx->ch_layout =
+(AVChannelLayout)AV_CHANNEL_LAYOUT_MONO :
+
+(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
+    if (!avctx->bit_rat
+        avctx->bit_rate = s->bit_rate;
+
+    if (s->frame_size <= 0) {
+        av_log(avctx, Ame\n");
+        return AVERROR_INVALIDDATA;
+    } else if (s->frame
+        av_log(avctx, AV_LOG_DEBUG, "incorrect frame size - multiple frames in
+buffer?\n");
+        buf_size= s->frame_size;
+    }
+
+    s->frame = frame;
+
+    ret = mp_decode_fra
+    if (ret >= 0) {
+        s->frame->nb_sa
+        *got_frame_ptr       = 1;
+        if (avctx->code
+            avctx->sample_rate = s->sample_rate;
+        //FIXME maybe mff from above here too
+    } else {
+        av_log(avctx, Acoding MPEG audio
+frame.\n");
+        /* Only return kes up the whole packet or
+         * the error is related to buffer management.
+         * If there is t consume the bad frame
+         * instead of returning an error, which would discard the whole
+
+● Bash(sed -n '1360,1400p' src/codec/audio/mp3.rs; echo "=== C synth loop ==="; sed
+  -n '1690,1735p' FFmpeg/libe.c)
+        let nb_frames = self.core.mp_decode_frame(&buf[..frame_bytes])?;
+
+        // get output buffer + apply the synthesis filter
+        // (template.c:
+        let frame_size = self.params.frame_size as usize;
+        let mut frame =mat::Fltp,
+self.params.ch_layout, frame_size)?;
+        frame.pts = pkt
+        frame.duration = pkt.duration;
+        frame.time_base
+        frame.sample_rate = self.core.header.sample_rate;
+
+        let t = tables();
+        let mut samples
+        for ch in 0..self.core.header.nb_channels as usize {
+            samples.fil
+            for i in 0..nb_frames {
+                let row[i * SBLIMIT..(i + 1) *
+SBLIMIT];
+                mpa_syn
+                    &mut self.core.synth_buf[ch],
+                    &mu[ch],
+                    &t.synth_window,
+                    &mu
+                    &mut samples[i * 32..(i + 1) * 32],
+                    1,
+                    row,
+                );
+            }
+            let plane =
+            for (dst, src) in plane.chunks_exact_mut(4).zip(samples.iter()) {
+                dst.cops());
+            }
+        }
+        Ok(Some(frame))
+    }
+}
+
+impl AudioDecoder for Mp3Decoder {
+    /// `decode_ctx_ini:283-315`) — the mp3
+    /// float codec gate: output `OUT_FMT_P` = FLTP.
+    fn init(&mut self,  Result<()> {
+        match params.codec_id {
+=== C synth loop ===
+
+    *got_frame_ptr = 1;
+
+    return buf_size;
+}
+#endif /* CONFIG_MP3ADUAT_DECODER */
+
+#if CONFIG_MP3ON4_DECODODER
+
+/**
+ * Context for MP3On4 decoder
+ */
+typedef struct MP3On4DecodeContext {
+    int frames;        mp3 frames per block
+(number of mp3 decoder instances)
+    int syncword;      atch
+    const uint8_t *coff;            ///< channel offsets in output buffer
+    MPADecodeContext *montext for every decoder
+instance                                                                    } MP3On4DecodeContext;
+
+#include "mpeg4audio.h"
+
+/* Next 3 arrays are iner (passed via codecdata)
+*/
+
+/* number of mp3 decoder instances */
+static const uint8_t mp, 3, 4, 5 };
+
+/* offsets into output is FL FR C LFE BL BR SL SR
+*/
+static const uint8_t ch
+    { 0             },
+    { 0             },
+    { 0             },  // FLR
+    { 2, 0          },
+    { 2, 0, 3       },  // C FLR BS
+    { 2, 0, 3       },
+    { 2, 0, 4, 3    },  // C FLR BLRS LFE
+    { 2, 0, 6, 4, 3 },
+};
+
+/* mp3on4 channel layouts */
+static const int16_t ch
+    0,
+    AV_CH_LAYOUT_MONO,
+    AV_CH_LAYOUT_STEREO,
+    AV_CH_LAYOUT_SURROU
+    AV_CH_LAYOUT_4POINT0,
+    AV_CH_LAYOUT_5POINT
+
+● Bash(grep -n "ff_mpa_synth
+  FFmpeg/libavcodec/mpegaudiodec_template.c | grep -nE "for|out_samples|synth" |
+  head -10; sed -n '1495,154diodec_template.c)
+10:1535-    /* apply the synthesis filter */
+11:1536-    for (ch = 0 {
+20:1545-        for (i = 0; i < nb_frames; i++) {
+21:1546:            REN>mpadsp, s->synth_buf[ch],
+
+        s->last_buf_siz
+        if (s->in_gb.buffer) {
+            align_get_b
+            i = (get_bits_left(&s->gb) >> 3) - s->extrasize;
+            if (i >= 0
+                memmove(s->last_buf, s->gb.buffer + (get_bits_count(&s->gb) >>
+3), i);
+                s->last_buf_size=i;
+            } else
+                av_log(s->avctx, AV_LOG_ERROR, "invalid old backstep %d\n",
+i);
+            s->gb           = s->in_gb;
+            s->in_gb.bu
+            s->extrasize    = 0;
+        }
+
+        align_get_bits(
+        av_assert1((get_bits_count(&s->gb) & 7) == 0);                              i = (get_bits_left(&s->gb) >> 3) - s->extrasize;
+        if (i < 0 || i > BACKSTEP_SIZE || nb_frames < 0) {
+            if (i < 0)
+                av_log(s->avctx, AV_LOG_ERROR, "invalid new backstep %d\n",
+i);
+            i = FFMIN(BACKSTEP_SIZE, buf_size - HEADER_SIZE);
+        }
+        av_assert1(i <= buf_size - HEADER_SIZE && i >= 0);
+        memcpy(s->last_b.buffer + buf_size -
+HEADER_SIZE - i, i);
+        s->last_buf_siz
+    }
+
+    if(nb_frames < 0)
+        return nb_frames;
+
+    /* get output buffe
+    if (!samples) {
+        av_assert0(s->f
+        s->frame->nb_samples = s->avctx->frame_size;
+        if ((ret = ff_g, 0)) < 0)
+            return ret;
+        samples = (OUT_ta;
+    }
+
+    /* apply the synthesis filter */
+    for (ch = 0; ch < s
+        int sample_stride;
+        if (s->avctx->sample_fmt == OUT_FMT_P) {
+            samples_ptr   = samples[ch];
+            sample_stri
+        } else {
+            samples_ptr
+            sample_stride = s->nb_channels;
+        }
+        for (i = 0; i < nb_frames; i++) {
+
+● Bash(sed -n '1545,1560p' FFmpeg/libavcodec/mpegaudiodec_template.c; echo "===
+  port imdct write into sb_s30p'
+  src/codec/audio/mp3.rs; sed -n '1180,1200p' src/codec/audio/mp3.rs)
+        for (i = 0; i <
+            RENAME(ff_mpa_synth_filter)(&s->mpadsp, s->synth_buf[ch],
+                                        &(s->synth_buf_offset[ch]),
+                                        RENAME(ff_mpa_synth_window),
+                       state, samples_ptr,
+                                        sample_stride, s->sb_samples[ch][i]);
+            samples_ptr
+        }
+    }
+
+    return nb_frames * _channels;
+}
+
+static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                       t *avpkt)
+{
+=== port imdct write in
+        let mut last_buf_bits = (self.last_buf_size * 8) as i64;
+
+        // now we get bits from the main_data_begin offset
+        let mut gr = 0usize;
+        while gr < nb_granules && (last_buf_bits >> 3) < main_data_begin as
+i64 {
+            for ch in 0..nch {
+                let g =
+                last_buf_bits += g.part2_3_length as i64;
+                g.sb_hy
+                compute_imdct(
+                    ch,
+                    gr,
+                    &mu
+                    &mut self.sb_samples,
+                    &mu
+                );
+            }
+            gr += 1;
+        }
+        let skip = last_buf_bits - 8 * main_data_begin as i64;
+        if skip >= selfs.extrasize as i64 * 8 &&
+self.bs.in_gb.is_some()
+                compute_stereo(self.header.mode_ext, lsf, sri, &mut
+self.granules, gr);
+            }
+
+            for ch in 0
+                reorder_block(sri, &mut self.granules[ch][gr]);
+                computes[ch][gr]);
+                compute_imdct(
+                    ch,
+                    gr,
+                    &mu
+                    &mut self.sb_samples,
+                    &mu
+                );
+            }
+            gr += 1;
+        } /* gr */
+        if self.bs.gb.get_bits_count() < 0 {
+            let n = -se
+            self.bs.gb.skip_bits_long(n);
+        }
+        Ok(nb_granules * 18)
+
+∴ The synth loop matches C. The bug must be inside compute_imdct (the sb_samples
+  write pattern) or mpa_synt_imdct
+  (template.c:1358-1418ish) writes:
+
+  for (i = 0; i < 36; i += 18) // two blocks... actually:
+  IMDCT window: for each blo]
+  s->sb_samples[ch][18*granule + i][sblimit...
+  Actually C writes ptr = &s->sb_samples[ch][18 * gr][0] roughly, i.e. sb_samples
+  is [32][18][SBLIMIT] with [i][sb] indexing: sample index i (0..36 per granule
+  pair), subband sb. The synamples[ch][i] = 18 values ×
+  32 subbands for frame i? No wait — C's synth gets s->sb_samples[ch][i] where
+  sb_samples is declared DEC
+  sb_samples)[MPA_MAX_CHANNELS][36][SBLIMIT]. So [ch][36][32] — 36 rows of 32
+  subband values. nb_frames rame returns nb_frames =
+  18*nb_granules/32? For MPEG1 stereo: 2 granules × 18 = 36 rows, each synth call
+  consumes ONE row producingamples.
+
+  Port has sb_samples: [[f32NNELS] — flat 3632 with row
+  = iSBLIMIT — matches [36][32].
+
+  So the bug is likely in compute_imdct's write into sb_samples or in
+  mpa_synth_filter. I need tnst C's (template.c
+  ~1358-1418) and mpa_synth_filter against mpegaudiodsp_template.c:178-195. Let me
+  read both.
+
+● Bash(grep -n "static void
+  FFmpeg/libavcodec/mpegaudiodec_template.c; sed -n "$(grep -n 'static void
+  compute_imdct' FFmpeg/liba.c | cut -d: -f1),+62p"
+  FFmpeg/libavcodec/mpegaudiodec_template.c)
+1132:static void comput GranuleDef *g,
+static void compute_imdct(MPADecodeContext *s, GranuleDef *g,
+                          INTFLOAT *sb_samples, INTFLOAT *mdct_buf)
+{
+    INTFLOAT *win, *out
+    INTFLOAT out2[12];
+    int i, j, mdct_long
+
+    /* find last non ze
+    ptr  = g->sb_hybrid + 576;
+    ptr1 = g->sb_hybrid
+    while (ptr >= ptr1) {
+        int32_t *p;
+        ptr -= 6;
+        p    = (int32_t
+        if (p[0] | p[1] | p[2] | p[3] | p[4] | p[5])
+            break;
+    }
+    sblimit = ((ptr - g
+    if (g->block_type == 2) {
+        /* XXX: check for 8000 Hz */
+        if (g->switch_p
+            mdct_long_end = 2;
+        else
+            mdct_long_end = 0;
+    } else {
+        mdct_long_end = sblimit;
+    }
+
+    s->mpadsp.RENAME(imct_buf, g->sb_hybrid,
+                                     mdct_long_end, g->switch_point,
+                       ;
+
+    buf = mdct_buf + 4*dct_long_end & 3);
+    ptr = g->sb_hybrid + 18 * mdct_long_end;
+
+    for (j = mdct_long_end; j < sblimit; j++) {
+        /* select frequ
+        win     = RENAME(ff_mdct_win)[2 + (4  & -(j & 1))];
+        out_ptr = sb_sa
+        for (i = 0; i < 6; i++) {
+            *out_ptr = buf[4*i];
+            out_ptr +=
+        }
+        imdct12(out2, p
+        for (i = 0; i < 6; i++) {
+            *out_ptr       ], 1) + buf[4*(i +
+6*1)];
+            buf[4*(i + in[i + 6], 1);
+            out_ptr += SBLIMIT;
+        }
+        imdct12(out2, ptr + 1);
+        for (i = 0; i <
+            *out_ptr     = MULH3(out2[i    ], win[i    ], 1) + buf[4*(i +
+6*2)];
+            buf[4*(i + 6*0)] = MULH3(out2[i + 6], win[i + 6], 1);
+            out_ptr +=        }
+        imdct12(out2, ptr + 2);
+        for (i = 0; i < 6; i++) {
+            buf[4*(i + in[i    ], 1) + buf[4*(i +
+6*0)];
+            buf[4*(i + in[i + 6], 1);
+            buf[4*(i + 6*2)] = 0;
+        }
+
+● Bash(sed -n '76,178p' FFmemplate.c)
+    is just to preserve alignment for SIMD implementations.
+*/
+DECLARE_ALIGNED(16, INTFLOAT, RENAME(ff_mdct_win))[8][MDCT_BUF_SIZE];
+
+DECLARE_ALIGNED(16, MPA_INT, RENAME(ff_mpa_synth_window))[512+256];
+
+#define SUM8(op, sum, w, p)               \
+{
+    op(sum, (w)[0 * 64], (p)[0 * 64]);    \
+    op(sum, (w)[1 * 64
+    op(sum, (w)[2 * 64], (p)[2 * 64]);    \
+    op(sum, (w)[3 * 64
+    op(sum, (w)[4 * 64], (p)[4 * 64]);    \
+    op(sum, (w)[5 * 64
+    op(sum, (w)[6 * 64], (p)[6 * 64]);    \
+    op(sum, (w)[7 * 64
+}
+
+#define SUM8P2(sum1, op1, sum2, op2, w1, w2, p) \
+{
+    INTFLOAT tmp;\
+    tmp = p[0 * 64];\
+    op1(sum1, (w1)[0 * 64], tmp);\
+    op2(sum2, (w2)[0 *
+    tmp = p[1 * 64];\
+    op1(sum1, (w1)[1 * 64], tmp);\
+    op2(sum2, (w2)[1 * 64], tmp);\
+    tmp = p[2 * 64];\
+    op1(sum1, (w1)[2 * 64], tmp);\
+    op2(sum2, (w2)[2 *
+    tmp = p[3 * 64];\
+    op1(sum1, (w1)[3 *
+    op2(sum2, (w2)[3 * 64], tmp);\
+    tmp = p[4 * 64];\
+    op1(sum1, (w1)[4 * 64], tmp);\
+    op2(sum2, (w2)[4 *
+    tmp = p[5 * 64];\
+    op1(sum1, (w1)[5 *
+    op2(sum2, (w2)[5 * 64], tmp);\
+    tmp = p[6 * 64];\
+    op1(sum1, (w1)[6 * 64], tmp);\
+    op2(sum2, (w2)[6 *
+    tmp = p[7 * 64];\
+    op1(sum1, (w1)[7 *
+    op2(sum2, (w2)[7 * 64], tmp);\
+}
+
+void RENAME(ff_mpadsp_apply_window)(MPA_INT *synth_buf, MPA_INT *window,
+                                  int *dither_state, OUT_INT *samples,
+
+{
+    register const MPA
+    int j;
+    OUT_INT *samples2;
+#if USE_FLOATS
+    float sum, sum2;
+#else
+    int64_t sum, sum2;
+#endif
+
+    /* copy to avoid wrap */
+    memcpy(synth_buf +*synth_buf));
+
+    samples2 = samples
+    w = window;
+    w2 = window + 31;
+
+    sum = *dither_state;
+    p = synth_buf + 16;
+    SUM8(MACS, sum, w,
+    p = synth_buf + 48;
+    SUM8(MLSS, sum, w
+    *samples = round_sample(&sum);
+    samples += incr;
+    w++;
+
+    /* we calculate two samples at the same time to avoid one memory
+       access per two
+    for(j=1;j<16;j++) {
+        sum2 = 0;
+        p = synth_buf + 16 + j;
+        SUM8P2(sum, MACS, sum2, MLSS, w, w2, p);
+        p = synth_buf + 48 - j;
+        SUM8P2(sum, ML32, p);
+
+        *samples = rou
+        samples += incr;
+        sum += sum2;
+        *samples2 = round_sample(&sum);
+        samples2 -= incr;
+        w++;
+        w2--;
+    }
+
+    p = synth_buf + 32;
+    SUM8(MLSS, sum, w
+    *samples = round_sample(&sum);
+    *dither_state= sum;
+}
+
+/* 32 sub band synthesis filter. Input: 32 sub band samples, Output:
+   32 samples. */
+void RENAME(ff_mpa_synth_filter)(MPADSPContext *s, MPA_INT *synth_buf_ptr,
+
+● Bash(sed -n '178,200p' FFmpeg/libavcodec/mpegaudiodsp_template.c; echo "=== port
+  mpa_synth_filter + apply_0p' src/codec/audio/mp3.rs)
+void RENAME(ff_mpa_synth_filter)(MPADSPContext *s, MPA_INT *synth_buf_ptr,
+                      set,
+                                 MPA_INT *window, int *dither_state,
+                      ptrdiff_t incr,
+                                 MPA_INT *sb_samples)
+{
+    MPA_INT *synth_buf;
+    int offset;
+
+    offset = *synth_bu
+    synth_buf = synth_buf_ptr + offset;
+
+    s->RENAME(dct32)(synth_buf, sb_samples);
+    s->RENAME(apply_wier_state, samples, incr);
+
+    offset = (offset - 32) & 511;
+    *synth_buf_offset = offset;
+}
+
+static av_cold void mp
+{
+    int i, j;
+
+=== port mpa_synth_fil
+/// `ff_mpa_synth_filter_float` (`mpegaudiodsp_template.c:178-195`) —        /// 32 sub band synthesis: input 32 subband samples, output 32 samples.
+fn mpa_synth_filter(
+    synth_buf: &mut [f
+    synth_buf_offset: &mut usize,
+    window: &[f32],
+    dither_state: &mut i32,
+    samples: &mut [f32
+    incr: usize,
+    sb_samples: &[f32],                                                      ) {
+    let offset = *synth_buf_offset;
+    dct32(&mut synth_bamples);
+    apply_window(                                                                    &mut synth_buf[offset..],
+        window,
+        dither_state,
+        samples,
+        incr,
+    );
+    *synth_buf_offset
+}                                                                            /// `l3_unscale` (`mpegaudiodec_template.c:222-239`) — compute
+/// `value^(4/3) * 2^(exponent/4)` normalized to FRAC_BITS, via the
+/// shared fixed-point decoder's linbits
+/// escape path exactly as in C).
+fn l3_unscale(value: i
+    let t = tables();
+    let idx = (4 * vals usize;
+    let idx = idx.min(TABLE_4_3_SIZE - 1);                                       let mut e = t.table_4_3_exp[idx] as i32;
+    let m = t.table_4_3_value[idx];
+    e -= exponent >> 2
+    if !(0..=31).contains(&e) {
+        // C: `if (e >tive e reads as
+        // unsigned, so both out-of-range directions return 0.
+        return 0;
+    }                                                                            let m = (m + ((1u32 << e) >> 1)) >> e;
+    m as i32
+}
+
+// ----------------------------------------
+// Layer 3 scale-factor helpers — mpegaudiodec_template.c:659-723
+// ----------------------------------------
+
+/// The `SPLIT` macro -677`).
+fn split(dst: &mut i32, sf: &mut i32, n: i32) {
+    match n {
+        3 => {                                                                           let m = (*sf * 171) >> 9;
+            *dst = *sf - 3 * m;
+            *sf = m;
+        }
+        4 => {
+            *dst = *sf & 3;
+            *sf >>= 2;
+        }                                                                            5 => {
+            let m = (*sf * 205) >> 10;
+            *dst = *sf
+            *sf = m;
+        }
+        6 => {
+            let m = (*
+            *dst = *sf - 6 * m;
+            *sf = m;
+        }
+        _ => *dst = 0,
+    }                                                                        }
+
+/// `lsf_sf_expand` (`86`).
+pub fn lsf_sf_expand(slen: &mut [i32; 4], mut sf: i32, n1: i32, n2: i32, n3:
+i32) {
+    split(&mut slen[3], &mut sf, n3);
+    split(&mut slen[2]
+    split(&mut slen[1], &mut sf, n1);
+    slen[0] = sf;
+}
+
+/// `exponents_from_scale_factors` (`mpegaudiodec_template.c:688-723`).
+fn exponents_from_scalleDef, exponents: &mut
+[i16; 576]) {
+    let mut ptr = 0usi
+    let gain = g.globa
+    let shift = g.scalefac_scale as i32 + 1;                               
+    let sri = sri as usize;
+    let bstab = &FF_BA
+    let pretab = &FF_MPA_PRETAB[(g.preflag != 0) as usize];                    for i in 0..g.long_end as usize {
+        let v0 = gain - ((g.scale_factors[i] as i32 + pretab[i] as i32) <<
+shift) + 400;
+        for _ in 0..bstab[i] {
+            exponents[
+            ptr += 1;
+```
+
 # Codec ladder (your roadmap) — step 3 in flight 🔄
 
 |     Ladder      |                                                           Status                                                            |
