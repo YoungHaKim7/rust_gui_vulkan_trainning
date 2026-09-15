@@ -23,6 +23,8 @@ $ cargo nextest run 2>&1 | grep -E "channel_layout" | grep -E "PASS"
 # FAILED 만 골라 보기
 cargo nextest run 2>&1 | grep -E "channel_layout" | grep -E "FAILED"
 
+# 간단하게 좋
+cargo build 2>&1 | grep -E "^(error|warning)" -A6 | head -20; cargo test 2>&1 | tail -3)
 
 #
 $ cargo nextest run 2>&1 | grep -E "channel_layout"
