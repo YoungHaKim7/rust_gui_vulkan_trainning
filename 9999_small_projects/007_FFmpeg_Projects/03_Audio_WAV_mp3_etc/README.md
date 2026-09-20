@@ -17,3 +17,21 @@ Recovered prerequisite: the FFmpeg C tree is back — now inside the repo (./FFm
 Queued next (task #2): Phase 4b — WAV demux/mux (riffdec/riffenc core), PCM codec, CLI (-i in.wav -ar/-ac/-sample_fmt), and golden tests vs system ffmpeg (resample 48k→44.1k, s16→f32, stereo→mono).
 
 I'll pick up the moment the workflow notifies.
+
+# mp3
+
+- 9.200282 matched the port, not my formula — reverted.)
+
+- Two synthetic tests had encoded the buggy behavior ('10' as a table-1 codeword — actually a complete 1-bit code for symbol 0, y=0, silent pair; the correct code for 0x10 is '01'), and the impulse probe mis-expected odd-band frequency inversion. All three now assert C-true behavior.
+
+- Codec ladder standing
+
+    |            Step             |                    Status                    |
+    |-|-|
+    | PCM, WAV                    | ✅                                           |
+    | MP3 decode                  | ✅ today                                     |
+    | MP3 demux + -i x.mp3 CLI    | next (small: frame slicing + codec dispatch) |
+    | AAC → H.264 → MP4 → … → MKV | queued, one per session as you asked         |
+
+- The env-gated diagnostics stay in the tree (MP3_DUMP for sb_hybrid band energies, MP3_FBD for full sideinfo dumps) — they're what pinned the diagnosis, and the same pattern will audit AAC when its turn comes.
+  - ※ recap: FFmpeg-to-Rust port: MP3 d
