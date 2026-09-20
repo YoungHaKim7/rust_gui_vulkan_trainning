@@ -151,23 +151,40 @@ impl State {
     // Render
     // ------------------------------------------------------------
 
-    fn render(&mut self) -> Result<(), wgpu::CreateSurfaceError> {
+    fn render(&mut self) -> Result<(), wgpu::CurrentSurfaceTexture> {
         // --------------------------------------------------------
         // Get the next surface texture.
+        //
+        // Since wgpu 30, get_current_texture() returns an enum
+        // instead of a Result<SurfaceTexture, SurfaceError>:
+        //
+        // CurrentSurfaceTexture
+        //      ├── Success(SurfaceTexture)
+        //      │        │
+        //      │        └── texture
+        //      │                 │
+        //      │                 └── create_view()
+        //      ├── Suboptimal(SurfaceTexture) // usable, but reconfigure
+        //      └── Timeout | Occluded | Outdated | Lost | Validation
         // --------------------------------------------------------
 
-        let output = self.surface.get_current_texture();
+        let mut reconfigure = false;
+
+        let output = match self.surface.get_current_texture() {
+            wgpu::CurrentSurfaceTexture::Success(output) => output,
+
+            // The texture is usable, but no longer matches the surface,
+            // so reconfigure after presenting this frame.
+            wgpu::CurrentSurfaceTexture::Suboptimal(output) => {
+                reconfigure = true;
+                output
+            }
+
+            error => return Err(error),
+        };
 
         // --------------------------------------------------------
         // Create a texture view.
-        // pub fn get_current_texture(&self) -> CurrentSurfaceTexture {}
-        //
-        //
-        // SurfaceTexture
-        //      │
-        //      └── texture
-        //              │
-        //              └── create_view()
         // --------------------------------------------------------
 
         let view = output
@@ -229,9 +246,15 @@ impl State {
 
         // --------------------------------------------------------
         // Present the rendered image.
+        // Since wgpu 30, present() lives on Queue, not on the
+        // surface texture: queue.present(surface_texture).
         // --------------------------------------------------------
 
-        output.present();
+        self.queue.present(output);
+
+        if reconfigure {
+            self.resize(self.size);
+        }
 
         Ok(())
     }
@@ -316,26 +339,29 @@ impl ApplicationHandler for App {
                 match state.render() {
                     Ok(()) => {}
 
-                    Err(wgpu::SurfaceError::Lost) => {
+                    Err(wgpu::CurrentSurfaceTexture::Lost) => {
                         state.resize(state.size);
                     }
 
-                    Err(wgpu::SurfaceError::OutOfMemory) => {
-                        eprintln!("GPU out of memory");
-                        event_loop.exit();
+                    Err(wgpu::CurrentSurfaceTexture::Outdated) => {
+                        state.resize(state.size);
                     }
 
-                    Err(wgpu::SurfaceError::Timeout) => {
+                    Err(wgpu::CurrentSurfaceTexture::Timeout) => {
                         eprintln!("Surface timeout");
                     }
 
-                    Err(wgpu::SurfaceError::Outdated) => {
-                        state.resize(state.size);
+                    Err(wgpu::CurrentSurfaceTexture::Occluded) => {
+                        eprintln!("Surface occluded");
                     }
 
-                    Err(wgpu::SurfaceError::Other) => {
-                        eprintln!("Surface error");
+                    Err(wgpu::CurrentSurfaceTexture::Validation) => {
+                        eprintln!("Surface validation error");
                     }
+
+                    // render() only ever returns these two on success.
+                    Err(wgpu::CurrentSurfaceTexture::Success(_))
+                    | Err(wgpu::CurrentSurfaceTexture::Suboptimal(_)) => {}
                 }
 
                 // Request another frame.
