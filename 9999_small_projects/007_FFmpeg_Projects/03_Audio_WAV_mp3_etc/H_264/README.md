@@ -15,3 +15,10 @@
 ⏺ Running 3 shell commands…
   ⎿  $ sed -n '600,698p' FFmpeg/libavcodec/h264_ps.c
 ```
+
+- Prediction templates are the spec formulas. Now the reconstruction ordering (h264_mb.c) and IDCT:
+
+```bash
+⏺ Running 3 shell commands…
+  ⎿  $ sed -n '/hl_decode_mb_internal/,/^}/p' FFmpeg/libavcodec/h264_mb_template.c | head -110; echo ====; sed -n '/static void FUNCC(ff_h264_luma_dc_dequant_idct)/,/^}/p' FFmpeg/libavcodec/h264idct.c | head -55
+```
