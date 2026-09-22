@@ -174,6 +174,15 @@ cargo build --lib 2>&1 | grep -E "^error" -A 5 | head -14)
  cargo test --lib -- codec::audio::mp3 2>&1 | grep -B 2 -A 6 "panicked" | head -40
 
   Bash(grep -n "let fps" -B 2
+
+
+
+Bash(cargo build 2>&1 | grep -cE "^error"; AAC_DUMP=1 ./target/debug/ffmpeg_rs -y -i /tmp/aac_mono.aac /tmp/aac_mono_our.wav
+      2>&1 | grep "ICS" | sed -n '1,6p;58,62p')
+  ⎿  0
+     ICS wseq=1 kb=0 groups=1 max_sfb=43 | bt[0..12]=0b0b0b0b0b0b0b0b0b0b0b0b | sf[0..12]=-1024.000 -1217.748 -1217.748 -2048
+     .000 -1722.156 -3444.312 -2435.496 -1217.748 -1024.000 -608.874 -256.000 -256.000 | sfb E[0..16]=11 11 11 11 12 13 11 11
+     … +20 lines (ctrl+o to expand)
 ```
 
 # ffmpeg원본으로 test
