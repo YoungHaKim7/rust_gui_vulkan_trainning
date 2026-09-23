@@ -31,3 +31,21 @@
   Running 2 shell commands…
   ⎿  $ sed -n '42,60p' FFmpeg/libavcodec/h264_mvpred.h; sed -n '134,235p' FFmpeg/libavcodec/h264_parse.c
 ```
+
+
+# 260923(07:01pm)
+
+- The extractor's row-regex failed on the nested layout. Rewrite it to slice flat arrays by dimension:
+
+- Found it — chroma_dc_coeff_token_len contains the search string as a suffix. Anchor with a word boundary:
+
+- The C tables are triangular with implicit zero padding. Parse per-row and pad:
+
+- 15 rows present, 16 declared — pad missing trailing rows too:
+
+- The intra table uses enum names + arithmetic — generate it programmatically to match C's values:
+
+```bash
+  1 tasks (0 done, 1 in progress, 0 open)
+  ◼ H.264 survey + module design
+```
