@@ -183,6 +183,11 @@ Bash(cargo build 2>&1 | grep -cE "^error"; AAC_DUMP=1 ./target/debug/ffmpeg_rs -
      ICS wseq=1 kb=0 groups=1 max_sfb=43 | bt[0..12]=0b0b0b0b0b0b0b0b0b0b0b0b | sf[0..12]=-1024.000 -1217.748 -1217.748 -2048
      .000 -1722.156 -3444.312 -2435.496 -1217.748 -1024.000 -608.874 -256.000 -256.000 | sfb E[0..16]=11 11 11 11 12 13 11 11
      … +20 lines (ctrl+o to expand)
+
+
+# 변수 미리 설정하고 테스트
+ H264_DUMP=1 cargo test --lib "video::h264" -- --nocapture 2>&1 | grep -aE "decode error|H264 WIP|test result" | head -3)
+fixed
 ```
 
 # ffmpeg원본으로 test
