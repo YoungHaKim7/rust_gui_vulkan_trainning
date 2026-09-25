@@ -1,4 +1,17 @@
-Recovered prerequisite: the FFmpeg C tree is back — now inside the repo (./FFmpeg/ + ./rust_projects/, your "two folders"). All of libswresample + the libavutil audio foundations verified present (~4K lines of C in scope for this wave).
+# 260925
+
+- The harness's per-MB memset hack corrupted the left border — remove it (real C's borders stay 64):
+
+- Found it — the first-level suffix update level_code + 3U > 6U is an unsigned compare; negative levels wrap and bump sl to 2. My Rust used signed:
+
+```bash
+$ J=/Users/gy/.claude/jobs/effb161f/tmp; $J/h264c /tmp/h264_alli.h264 2>/dev/null | grep -aE "n=1[1-5] |^MB1 |cp=" | head -8; echo ---; H264_DUMP=1 cargo test --lib video::h264 -- --nocapture 2>&1 | grep -aE "RES n=1[1-9] |TOK n=1[2-9] " | head -8
+```
+
+<hr />
+
+
+- All of libswresample + the libavutil audio foundations verified present (~4K lines of C in scope for this wave).
 
 - In flight — 5 spec agents deep-reading the C, then 5 worktree implementers:
 
