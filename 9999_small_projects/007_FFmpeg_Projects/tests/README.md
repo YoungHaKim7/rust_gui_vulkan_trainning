@@ -176,6 +176,33 @@ cargo build --lib 2>&1 | grep -E "^error" -A 5 | head -14)
   Bash(grep -n "let fps" -B 2
 
 
+264_DUMP=1 cargo test --lib video::h264 -- --nocapture 2>&1 | grep -aE "TOK n=0 |ENTR n=0 " | head -4)
+  ⎿  ENTR n=0 pos=77
+       TOK n=0 pred=0 b=0 bits=0000000100001010
+     ENTR n=0 pos=1399
+       TOK n=0 pred=0 b=0 bits=1000000010000100
+  ⎿  Allowed by auto mode classifier
+
+⏺ Bash(J=/Users/gy/.claude/jobs/effb161f/tmp; $J/h264c /tmp/h264_alli.h264 2>/dev/null | sed -n '/^MB1 /,/^MB2 /p' | grep -aE
+      "CTOK n=[0-3] |^  n=[0-3] " | head -8)
+  ⎿    CTOK n=0 pred=0 b=0 bits=000000000000000b\n  n=0 tc=0 pos=1400
+       CTOK n=1 pred=0 b=0 bits=000000000000000b\n  n=1 tc=8 to=3 zl=5 pos=1437
+       CTOK n=2 pred=0 b=0 bits=000000000000000b\n  n=2 tc=0 pos=1447
+       n=3 tc=1 to=1 zl=0 pos=1453
+  ⎿  Allowed by auto mode classifier
+
+⏺ Bash(H264_DUMP=1 cargo test --lib video::h264 -- --nocapture 2>&1 | grep -aE "ENTR n=[0-3] |RES n=[0-3] " | sed -n '3,8p')
+  ⎿  ENTR n=1 pos=143
+     ENTR n=2 pos=149
+     ENTR n=3 pos=155
+     … +3 lines (ctrl+o to expand)
+  ⎿  Allowed by auto mode classifier
+
+⏺ Bash(H264_DUMP=1 cargo test --lib video::h264 -- --nocapture 2>&1 | grep -aE "ENTR n=[0-9]+ pos=1[3-9]" | head -8)
+  ⎿  ENTR n=1 pos=143
+     ENTR n=2 pos=149
+     ENTR n=3 pos=155
+
 
 Bash(cargo build 2>&1 | grep -cE "^error"; AAC_DUMP=1 ./target/debug/ffmpeg_rs -y -i /tmp/aac_mono.aac /tmp/aac_mono_our.wav
       2>&1 | grep "ICS" | sed -n '1,6p;58,62p')
