@@ -1,10 +1,10 @@
-#![warn(
-    clippy::use_self,
-    deprecated_in_future,
-    rust_2018_idioms,
-    trivial_casts,
-    trivial_numeric_casts
-)]
+// #![warn(
+//     clippy::use_self,
+//     deprecated_in_future,
+//     rust_2018_idioms,
+//     trivial_casts,
+//     trivial_numeric_casts
+// )]
 
 use std::{
     borrow::Cow,
