@@ -1,5 +1,18 @@
+
+
 # 260927 (6:28am)
 
+- (11:45am)
+
+- Found a real reconstruction bug — the intra16x16 DC scatter reads the wrong Hadamard output positions (scattered[b*16] instead of C's x_offset-strided layout). Fixing:
+
+- The table's pred values are already in my mode space (0=V,1=H,2=DC) — my remap inverts them. Removing it and re-testing black:
+
+```bash
+ ⎿  $ export PATH="/opt/homebrew/bin:$PATH"; ffmpeg -hide_banner -v trace -i /tmp/h264_black.h264 -f null - 2>&1 | grep -aE "mb_type|qp=|intra16|pred" | head -8
+```
+
+- (6:28am)
 
 ```bash
 ⏺ Bash(J=/Users/gy/.claude/jobs/effb161f/tmp; $J/h264c /tmp/h264_black.h264 2>/dev/null > /Users/gy/.claude/jobs/effb161f/tmp/black.out & sleep 8; head -12 /Users/gy/.claude/jobs/effb161f/tmp/black.out)
