@@ -12,6 +12,54 @@
  ⎿  $ export PATH="/opt/homebrew/bin:$PATH"; ffmpeg -hide_banner -v trace -i /tmp/h264_black.h264 -f null - 2>&1 | grep -aE "mb_type|qp=|intra16|pred" | head -8
 ```
 
+
+- ∴ Tables are correct: div6[27]=4, rem6[27]=3, init=14 → expected 896. But the runtime qmul = 72. So the dequant BUILD must be broken, OR self.qscale isn't 27 at that point. 72 = 9<<3. 9 = init[?]. 72 with q=9? dequant(0,9): div6=1, rem6=3 → 14<<3 = 112. q=6: div6=1 rem6=0 → 10<<3 = 80. qmul=72: 9<<3 or 18<<2 or 36<<1... 18<<2 → rem6=3(second col), div6=0 → q∈[3..5]? But qp 27!
+
+- OR qscale is not 27: PRE-SCATTER prints dequant(0, self.qscale). If self.qscale = 21: div6=3, rem6=3 → 14<<5 = 448. 72... q=4: div6=0, rem6=4 → init[4][0]=16<<2=64. q=5: 18<<2=72!!! YES qmul 72 = init[4][0]... no wait init[4] = {16,20,25} → 16<<2 = 64. init[5] = {18,23,29} → 18<<2 = 72 → rem6=5, div6=0 → q ∈ {5, 11, ...} with div6 0 → q=5. So self.qscale = 5?! But the slice qp printed 27.
+
+- OH WAIT — the PRE-SCATTER line: I passed self.qsca..dequant(0, ...) — but in hl_decode_mb the qscaleused for the DC is... my printed line computes it independently and got 72 → self.qscale = 5?? The MBT/qp dumps said the slice. UNLESS decode_mb_residual's qp-delta upk mb_qp_delta = +2 → 27+2 = 29?? no, slice qp was25+2=27... and the residual's mb_qp_delta for the DC is a SEPARATE delta: decode_mb_residual reads dq and adds. For bqp 27, then the MB residual delta... the hand walk.." started at the qp-delta position? My hand mbwalk (wrong by poc bits) is unreliable.                                                                              
+  Focus: self.qscale at DC time gives qmul 72 → qscale=5?? That means the mb_qp_delta read garbage → qscale = 27 + dq(wor my decode_mb_residual condition: if self.cbp !=0 || INTRA16X16) reads the delta; cbp for row 3 = 0 → INTRA16X16 → reads delta ✓. dq = se(bits at that point). If alignment were off by the poc bits... but the harness aalli. On BLACK the harness HUNG → black was never poc_type≠0 and the harness unconditionally reads poc → harness misaligned; Rust conditional ✓ right. So black alignment rests on Rust alone.                              
+- qscale=5? 27 + dq = 5 → dq = -22? se(-22) = ue(43) = "00000101011" (11 bits). Plausible misread.                     
+  Hold on, actually the simplest check: the HDR dump said qp=25 (26+se). se read "00101..."? And the mb delta +2 → 27. PRE-SCATTER qscale=5. 27→5 means dq=-22 read from  coefficient bits!). So the residual path read themb_qp_delta but then the DC TOKEN was read from... the DC printed tc=1 to=0 and level -1593 — if the delta consumed DDC decode would ALSO be wrong but consistent.
+
+- Actually WAIT — maybe the issue is the ORDER: my de qp - delta, then for INTRA16X16 reads the DC. Butbetween mb_type and residual, for intra16x16 there's NOTHING (no modes, no cbp). ✓. And the chroma pred ue — read in decode_mb_intra BEFORE residual ✓ C order: modes/c
+
+- If everything aligns, dq at position X... but qmules self.qscale — hmm, wait, is self.qscale EVER SETto the slice qp? parse_slice_header sets self.qscale = qp ✓ (I set it). Then decode_mb_residual: self.qscale += dq. If dq read =
+  -22 due to misparse...
+
+- New idea: check the CHROMA pred position: my decod. Hand walk: chroma pred ue from ~32... The hand'sbits "11000101" (the DC bits) start with '1','1' — if chroma ue were read there: "1" → 0 (1 bit). qp delta se: "1" → 0 → qscale
+- stays 27. Then DC coeff_token from "00010100"... b 6 bits = tc=1 to=0?? Then level escape "000..." →hmm.
+
+- Given Rust's own trace: TOK n=48 bits=0001010000000000 tc=1 to=0, FIRSTDC bitsi=0 → escape → -1593. If instead the chroma pred/delta were read one ue earlier, everything shd positions. Get them from FFMPEG ITSELF: run ffmpeg -i black.h264 with -trace? Or use ffprobe -show_frames for the qp? ffprobe -show_frames -show_entries frame=... gives no qp.
+- There's -debug qp dump... ffmpeg -debug qp -i x.h2 QP! That's the oracle.
+
+```
+⏺ Bash(export PATH="/opt/homebrew/bin:$PATH"; ffmpeg /tmp/h264_black.h264 -f null - 2>&1 | grep -aE"qp|QP" | head -8)
+ matched as AVOption 'debug' with argument 'qp'
+
+⏺ Bash(export PATH="/opt/homebrew/bin:$PATH"; ffmpeg/tmp/h264_black.h264 -f null - 2>&1 | head -20)
+Splitting the commandline.
+Reading option '-hide_banner' ... matched as op show program banner) with argument '1'.
+Reading option '-v' ... matched as option 'v' (set logging level) with argument 'debug'.
+Reading option '-i' ... matched as input url wick.h264'.
+Reading option '-f' ... matched as option 'f' (force container format (auto-detected otherwise)) with argument 'null'.
+Reading option '-' ... matched as output url.
+Finished splitting the commandline.
+Parsing a group of options: global .
+Applying option hide_banner (do not show program banner) with argument 1.
+Applying option v (set logging level) with argu
+Successfully parsed a group of options.
+Parsing a group of options: input url /tmp/h264
+Successfully parsed a group of options.
+Opening an input file: /tmp/h264_black.h264.
+[in#0 @ 0x766301c000] Opening '/tmp/h264_black.h264' for reading
+[file @ 0x7662c18000] Setting default whitelist
+[in#0 @ 0x766301c000] Format h264 probed with size=2048 and score=51
+[in#0/h264 @ 0x766301c000] Before avformat_finds read:669 seeks:0 nb_streams:1
+[h264 @ 0x7662c40380] Decoding VUI
+[extract_extradata @ 0x76630100a0] nal_unit_typ
+```
+
 - (6:28am)
 
 ```bash
