@@ -1,3 +1,31 @@
+No. What's done is a Constrained Baseline H.264 decoder that is bit-exact on our three test streams, but only when ffmpeg also skips deblocking. It won't match ffmpeg's normal output, and it rejects most real-world H.264 files outright.
+
+**What works**
+- The parser handles NAL units, SPS/PPS and slice headers, and CAVLC entropy decoding.
+- I-slices decode intra 4x4, intra 16x16 and PCM macroblocks, with luma and chroma prediction, dequantization and inverse transforms.
+- P-slices decode all partition sizes and skip macroblocks, with quarter-pixel luma and chroma motion compensation, using multiple reference frames.
+- On the testsrc2, gray and black fixtures, all 20 frames of each match `ffmpeg -skip_loop_filter all` exactly.
+
+**What's missing**
+
+| Gap                                        | Effect                                                                                                                                                                           |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Deblocking loop filter                     | The biggest gap. Every correctly decoded frame still differs from what ffmpeg (or any player) shows by default, since blocky edges aren't smoothed. It's the next planned phase. |
+| CABAC                                      | Main and High profile streams use CABAC, so most files from phones, cameras, YouTube and x264 defaults are rejected.                                                             |
+| B-slices, direct mode, weighted prediction | Rejected. Common in anything but baseline.                                                                                                                                       |
+| 8x8 transform, custom scaling matrices     | High-profile features, rejected.                                                                                                                                                 |
+| Interlaced/MBAFF/field pictures            | Rejected (broadcast/TV content).                                                                                                                                                 |
+| MMCO, long-term refs, POC type 1           | Rejected. Needed by some encoders' reference management.                                                                                                                         |
+| FMO, SP/SI slices                          | Rejected (rare in practice).                                                                                                                                                     |
+| 4:2:2 / 4:4:4, bit depth > 8               | Only 8-bit 4:2:0 output.                                                                                                                                                         |
+| SIMD                                       | Everything is scalar, which is fine for correctness but slow.                                                                                                                    |
+
+Every rejection is a clean `Unsupported` error, never garbage output. For "fully implemented" in the sense of playing a typical `.mp4` from the web, the path is: deblocking, then CABAC, then B-slices, then the 8x8 transform and scaling matrices. That set covers Main and High profile, which is most content in the wild.
+
+Two housekeeping notes:
+- The module's doc comment in `h264.rs` is out of date. It still says "single short-term reference picture", but multi-reference P now works.
+- Another session committed `ec4ef87` using my last summary as its commit message. That session's uncommitted `h264.rs` edits are still in the working tree, so check what it's changing before you commit anything there.
+
 # 260929
 
 - Frame 1 now maxes out at a diff of 5, down from 248, matching the residual seen in frame 0. Since frames 2+ require multiple reference frames (l0 = 2 and 3), I'll implement that next, then run a regression check and commit.
