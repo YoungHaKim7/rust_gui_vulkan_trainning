@@ -1,4 +1,78 @@
+# 260929
 
+- Frame 1 now maxes out at a diff of 5, down from 248, matching the residual seen in frame 0. Since frames 2+ require multiple reference frames (l0 = 2 and 3), I'll implement that next, then run a regression check and commit.
+
+  Ran 1 shell command
+
+- Two debug-profile failures. Checking:
+
+  Ran 2 shell commands
+
+- The rerun is fully green at 579/579. Checking whether that earlier "2 failed" was a flake:
+
+  Ran 1 shell command
+
+- Flaky: some runs fail and abort the rest of the suite. Capturing a failing run in full:
+
+  Ran 2 shell commands
+
+- A file-size mismatch, ref.raw at twice the expected size. That points to two golden tests racing on a shared fixture path, not to a decoder issue. Checking how fixture dirs are named:
+
+  Searched for 3 patterns, ran 3 shell commands
+
+- I'm chasing a flaky golden test that only fails in the full debug suite, never in isolation. That points to a shared temp path across test binaries:
+
+  Searched for 2 patterns, ran 1 shell command
+
+- No shared path. It passes in isolation and in its own binary, so it's timing/load-dependent. Note the failure direction: our output was half the frames. Reproducing under parallel load:
+
+  Ran 1 shell command
+```
+Concurrent copies all pass, so it's not contention on that path either. Since it only flakes in the full suite, I'll collect which tests fail across several full runs:
+
+  Ran 1 shell command
+
+Five more full runs: all green. Before calling it environmental, one check for anything time-dependent in our CLI that could truncate output under load:
+
+  Searched for 1 pattern
+
+The flake isn't time-based and doesn't involve the H.264 code, and it passed 18/18 in repeated tests, so I'll log it as an open intermittent issue rather than guess at a fix. Now committing the P-frame work.
+
+  Ran 1 shell command
+
+Committed. Updating the roadmap memory so the next session starts from here:
+
+  Read 1 file, recalled 1 memory, searched memories, wrote 1 memory
+
+Extending the walker to P slices paid off. On the alli fixture (testsrc2), frame 1, the first P-frame with real motion, now decodes within max pixel diff 5, down from 248. That matches frame 0, which also went from 244 to 5 this session. Gray and black are still bit-exact (20/20 frames each), and the suite passes 579/579 in release and debug.
+
+Frame 1 (commit 177f2d5). Nine inter-prediction bugs. The Python walker now agrees with the Rust decoder bit-for-bit on every macroblock of frame 1.
+- P8x8 read order: C reads all four sub-block types before any motion-vector deltas. We interleaved them, which caused the "P sub_mb_type out of range" error.
+- Neighbor motion vectors: these came from the wrong cells in four places. The block-order mistake from the intra work repeated here (SCAN8 is quadrant-ordered, not raster), the top neighbor was read from the wrong row, and the top-right and top-left cells were misplaced or never filled.
+- Skipped macroblocks: they re-applied the previous macroblock's leftover residual. The skip motion prediction also didn't match C, and the 16x8/8x16 fallbacks passed the wrong block index.
+- Quarter-pixel luma interpolation: rewritten from the spec's sample table. Two cases used to panic (unreachable!()), and the center sample was computed from already-rounded values, so it wasn't bit-exact.
+
+Frame 0 chroma (commit b153fbd). Five bugs:
+- The plane predictions read the wrong edge pixels, and the chroma one used the wrong row stride, so it wrote over other macroblocks.
+- Chroma DC prediction is four per-quadrant averages in C, not one flat average.
+- The chroma DC dequantizer had the wrong shift and rounding.
+- The PPS chroma QP offset (−2 in this stream) was being ignored.
+- DC-only chroma blocks were never applied.
+
+Vulkano update (commit 1288cd4). Your new vulkano revision (9a80c29e7) needed only two changes in gpu.rs: device enumeration and queue creation now return a Vec instead of an iterator. Nothing else in the API had changed.
+
+Still open:
+- Frames 2 onward: the decoder stops at frame 2. Those slices reference two or three earlier frames, so the next feature is reference-index parsing plus a multi-frame reference buffer.
+- Small residue: the ≤5 differences on frames 0/1 trace back to one intra macroblock at (5,4).
+- Deblocking: the loop filter isn't ported yet; we still compare against ffmpeg -skip_loop_filter all.
+- Flaky test: golden_scaled_new_algorithms_vs_system_ffmpeg (CPU scaling, not H.264) failed in 3 full debug runs, with our output half the expected length. It then passed 18 runs in a row: alone, in its own binary, concurrently, and in full suites. I found no timing logic that could cut output short, so it isn't root-caused yet.
+
+The roadmap memory now records all of this. The walker lives in the job's tmp directory because /tmp keeps getting wiped mid-session.
+
+✻ Sautéed for 8m 13s · done 6:53 PM
+
+※ recap: We're getting the Rust H.264 decoder to match ffmpeg exactly, and the first two frames of the complex test video now match to within 5 pixel levels. Next is supporting multiple reference frames so decoding can get past frame 2.
+```
 
 # 260927 (6:28am)
 
