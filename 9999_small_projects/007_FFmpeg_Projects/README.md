@@ -1,8 +1,9 @@
 # ffmpeg docs
 - https://ffmpeg.org/ffmpeg.html
 
-FFmpeg libav tutorial - learn how media works from basic to transmuxing, transcoding and more. Translations: 🇺🇸 🇨🇳 🇰🇷 🇪🇸 🇻🇳 🇧🇷 🇷🇺
-- https://github.com/leandromoreira/ffmpeg-libav-tutorial
+### FFmpeg libav tutorial 
+- learn how media works from basic to transmuxing, transcoding and more. Translations: 🇺🇸 🇨🇳 🇰🇷 🇪🇸 🇻🇳 🇧🇷 🇷🇺
+  - https://github.com/leandromoreira/ffmpeg-libav-tutorial
 
 # 해외에서 시도한 ffmpeg프로젝트들
 - 레딧글
