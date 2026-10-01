@@ -1,3 +1,6 @@
+# ffmpeg docs
+- https://ffmpeg.org/ffmpeg.html
+
 # 해외에서 시도한 ffmpeg프로젝트들
 - 레딧글
   - https://www.reddit.com/r/rust/comments/1n0fbhv/has_anyone_worked_with_ffmpeg_and_rust/
