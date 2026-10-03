@@ -35,6 +35,47 @@
 
 <hr />
 
+```
+1. ✅ Phase 1 — CPU pipeline
+2. ✅ Phase 2 — Vulkan swscale: headless compute (`vulkano`), port of
+   `vf_scale_vulkan.c`'s shape + the `libswscale` kernels,
+   nearest/bilinear/bicubic, `-s` (colorspace matrix support is a Phase 3
+   candidate)
+3. ✅ Phase 3a — libswscale variable-width filters on the CPU engine:
+   `initFilter` port (`utils.c:197-612`), area/gauss/sinc/lanczos/spline
+   via `-scale_algo` with filter-width widening on downscale, CPU fallback
+   for algorithms the Vulkan engine cannot run
+4. ✅ Phase 3b — filtergraph (`libavfilter`: buffersrc/sink, `scale`/`format`)
+5. ✅ Phase 4 — `swresample` + audio paths
+   ✅ ◼ Phase 4a: audio foundations + swresample core (spec→implement→integrate)
+   ✅ ◼ Phase 4b: WAV container + PCM codec + CLI + goldens
+    PCM → AAC/MP3 → H.264 → MP4 is a particularly good progression because it takes you from a very simple codec to a sophisticated video codec and then to a container combining audio + video.
+      1. PCM
+      2. WAV container
+      3. MP3
+      4. AAC
+      5. H.264
+         ◼ Phase A: deblocking loop filter
+         ◻ Phase B: CABAC (Main profile I/P)
+         ◻ Phase C: B-slices, direct mode, weighted prediction, POC + output reordering
+         ◻ Phase D: High profile — 8x8 transform + scaling matrices
+         ◻ Phase E: full reference management — MMCO, long-term refs, list modification
+      6. MP4
+      7. H.265
+      8. VP9
+      9. AV1
+      10. MKV
+6. Phase 5 — NUT container, more filters
+  ✅ bug fix  
+
+7. Add SIMD
+
+8. Find more C code that hasn’t been implemented
+
+# I’m totally going to do Winit later, so for now, put it on hold
+put it on hold Stretch — winit player window on the Vulkan pipeline
+```
+
 ```bash
 ✅ Phase 1 — CPU pipeline (this)
 ✅ Phase 2 — Vulkan swscale: headless compute (vulkano), port of vf_scale_vulkan.c + libswscale/vulkan/, bilinear/bicubic, -s
